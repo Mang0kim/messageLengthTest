@@ -1,1 +1,143 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat Experiment</title>
+    <style>
+        :root {
+            --bg-color: #f0f2f5;
+            --system-bubble: #ffffff;
+            --user-bubble: #007aff;
+            --user-text: #ffffff;
+            --guide-color: #999;
+        }
 
+        body { font-family: -apple-system, sans-serif; background: var(--bg-color); margin: 0; display: flex; flex-direction: column; height: 100vh; }
+        
+        /* 채팅 창 영역 */
+        #chat-window { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 12px; }
+
+        /* 말풍선 공통 스타일 */
+        .message { max-width: 70%; padding: 10px 14px; border-radius: 18px; font-size: 14px; line-height: 1.4; position: relative; }
+        
+        /* 시스템: 왼쪽 */
+        .system { align-self: flex-start; background: var(--system-bubble); border: 1px solid #ddd; border-bottom-left-radius: 2px; }
+
+        /* 사용자: 오른쪽 */
+        .user { align-self: flex-end; background: var(--user-bubble); color: var(--user-text); border-bottom-right-radius: 2px; }
+
+        /* 하단 입력 영역 */
+        .input-area { background: #fff; padding: 20px; border-top: 1px solid #ddd; display: flex; gap: 10px; }
+        
+        input { flex: 1; padding: 12px; border: 1px solid #ccc; border-radius: 8px; outline: none; font-size: 14px; }
+        input::placeholder { color: var(--guide-color); }
+        
+        button { padding: 0 20px; background: var(--user-bubble); color: #fff; border: none; border-radius: 8px; cursor: pointer; }
+        button:disabled { background: #ccc; }
+
+        /* 에러 메시지 */
+        #error-msg { color: #ff3b30; font-size: 12px; margin-top: 5px; display: none; padding-left: 20px; padding-bottom: 10px; }
+    </style>
+</head>
+<body>
+
+<div id="chat-window">
+    <!-- 메시지 동적 생성 -->
+</div>
+
+<div id="error-msg">안내된 문구와 일치하지 않습니다. 다시 입력해주세요.</div>
+
+<div class="input-area">
+    <input type="text" id="user-input" autocomplete="off">
+    <button id="send-btn">전송</button>
+</div>
+
+<script>
+    // 1. 실험 시나리오 설정
+    const scenario = [
+        { guide: "안녕하세요", response: "안녕하세요! 실험에 참여해주셔서 감사합니다." },
+        { guide: "실험 절차를 알려주세요", response: "안내되는 문구를 그대로 입력하시면 대화가 진행됩니다." },
+        { guide: "알겠습니다", response: "좋습니다. 이제 다음 단계로 넘어갑니다." },
+        { guide: "종료", response: "모든 대화가 완료되었습니다. 창을 닫아주세요." }
+    ];
+
+    let currentTurn = 0;
+    const GAS_URL = "YOUR_GOOGLE_SCRIPT_URL"; // Google Sheets 연동 시 여기에 URL 입력
+
+    const chatWindow = document.getElementById('chat-window');
+    const inputField = document.getElementById('user-input');
+    const sendBtn = document.getElementById('send-btn');
+    const errorMsg = document.getElementById('error-msg');
+
+    // 초기화: 가이드 텍스트 설정
+    function updateGuide() {
+        if (currentTurn < scenario.length) {
+            inputField.placeholder = `입력: ${scenario[currentTurn].guide}`;
+            inputField.value = "";
+        } else {
+            inputField.placeholder = "실험 종료";
+            inputField.disabled = true;
+            sendBtn.disabled = true;
+        }
+    }
+
+    // 메시지 화면 추가
+    function appendMessage(text, sender) {
+        const msgDiv = document.createElement('div');
+        msgDiv.className = `message ${sender}`;
+        msgDiv.innerText = text;
+        chatWindow.appendChild(msgDiv);
+        chatWindow.scrollTop = chatWindow.scrollHeight;
+    }
+
+    // 데이터 저장 (Google Sheets 연동용)
+    async function logData(turn, input) {
+        if (GAS_URL === "YOUR_GOOGLE_SCRIPT_URL") return;
+        
+        try {
+            await fetch(GAS_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ turn, input, timestamp: new Date().toISOString() })
+            });
+        } catch (e) { console.error("Log failed", e); }
+    }
+
+    // 전송 로직
+    function handleSend() {
+        const userInput = inputField.value.trim();
+        const target = scenario[currentTurn].guide;
+
+        // 에러 처리: 정확한 입력 확인
+        if (userInput !== target) {
+            errorMsg.style.display = 'block';
+            inputField.style.borderColor = '#ff3b30';
+            return;
+        }
+
+        // 정상 입력 시
+        errorMsg.style.display = 'none';
+        inputField.style.borderColor = '#ccc';
+        
+        appendMessage(userInput, 'user');
+        logData(currentTurn, userInput);
+
+        // 시스템 응답 (0.5초 후)
+        setTimeout(() => {
+            appendMessage(scenario[currentTurn].response, 'system');
+            currentTurn++;
+            updateGuide();
+        }, 500);
+    }
+
+    sendBtn.addEventListener('click', handleSend);
+    inputField.addEventListener('keypress', (e) => { if(e.key === 'Enter') handleSend(); });
+
+    // 시작 시 가이드 표시
+    updateGuide();
+</script>
+
+</body>
+</html>
