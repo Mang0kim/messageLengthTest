@@ -15,7 +15,6 @@
             --guide-color: #a0a0a0;
         }
 
-        /* 전체 화면 고정(fixed) 제거, 일반적인 높이 100% 설정 */
         html, body { 
             margin: 0;
             padding: 0;
@@ -26,7 +25,6 @@
             overflow: hidden;
         }
 
-        /* 앱 컨테이너를 화면 크기에 맞추고 내부 스크롤 구조로 변경 */
         .app-container {
             display: flex;
             flex-direction: column;
@@ -42,7 +40,7 @@
         
         #version-tag { position: absolute; bottom: 20px; font-size: 12px; color: #999; font-family: monospace; }
 
-        /* 채팅 창 영역: 스크롤 영역을 독립적으로 격리 */
+        /* 채팅 창 영역 */
         #chat-window { 
             flex: 1; 
             overflow-y: auto; 
@@ -54,8 +52,17 @@
             box-sizing: border-box;
         }
 
-        /* 말풍선 공통 스타일 */
-        .message { max-width: 80%; padding: 11px 16px; border-radius: 18px; font-size: 14.5px; line-height: 1.45; position: relative; box-shadow: 0 1px 2px rgba(0,0,0,0.03); word-break: break-all; }
+        /* 말풍선 공통 스타일: 가로 기준 2/3 (66.6%)를 넘지 않도록 제한 */
+        .message { 
+            max-width: 66.6%; 
+            padding: 11px 16px; 
+            border-radius: 18px; 
+            font-size: 14.5px; 
+            line-height: 1.45; 
+            position: relative; 
+            box-shadow: 0 1px 2px rgba(0,0,0,0.03); 
+            word-break: break-all; 
+        }
         
         /* 시스템: 왼쪽 */
         .system { align-self: flex-start; background: var(--system-bubble); color: var(--system-text); border-bottom-left-radius: 2px; }
@@ -63,7 +70,7 @@
         /* 사용자: 오른쪽 */
         .user { align-self: flex-end; background: linear-gradient(135deg, var(--user-bubble-start), var(--user-bubble-end)); color: var(--user-text); border-bottom-right-radius: 2px; }
 
-        /* 하단 입력 영역: fixed 대신 유연한 박스로 배치하여 하단 공백(키보드 높이)에 반응하게 함 */
+        /* 하단 입력 영역 */
         .bottom-container { 
             background: #fff; 
             border-top: 1px solid #eaeaea; 
@@ -73,7 +80,6 @@
             gap: 6px; 
             box-sizing: border-box; 
             width: 100%;
-            /* 키보드가 올라올 때 밀리지 않도록 하단 여백 변수 처리 */
             margin-bottom: 0px; 
             transition: margin-bottom 0.1s ease-out;
         }
@@ -96,7 +102,7 @@
 <div id="start-overlay">
     <p id="start-msg">AI와 대화를 나누어보세요.</p>
     <button id="start-btn">대화 시작</button>
-    <div id="version-tag">v0.1.8</div>
+    <div id="version-tag">v0.1.9</div>
 </div>
 
 <div class="app-container">
@@ -114,7 +120,7 @@
 </div>
 
 <script>
-    const APP_VERSION = "0.1.8";
+    const APP_VERSION = "0.1.9";
 
     const scenario = [
         { guide: "안녕하세요", response: "안녕하세요! 실험에 참여해주셔서 감사합니다.", systemFirst: "안녕하세요, 대화를 시작합니다. 아래 안내에 따라 답장을 입력해주세요." },
@@ -144,12 +150,9 @@
         }, 50);
     }
 
-    // iOS 키보드 높이 문제를 완벽히 방어하는 유일한 로직: 
-    // 화면 크기와 가시 뷰포트 차이만큼 하단에 여백(margin-bottom)을 동적으로 부여
     function adjustKeyboardLayout() {
         if (window.visualViewport) {
             const offset = window.innerHeight - window.visualViewport.height;
-            // 키보드가 올라온 경우 여백을 주고, 내려간 경우 0으로 세팅
             bottomBar.style.marginBottom = `${Math.max(0, offset)}px`;
             scrollToBottom();
         }
@@ -217,14 +220,3 @@
     }
 
     startBtn.addEventListener('click', startExperiment);
-    sendBtn.addEventListener('click', handleSend);
-    inputField.addEventListener('keypress', (e) => { if(e.key === 'Enter' && !inputField.disabled) handleSend(); });
-    
-    inputField.addEventListener('focus', () => {
-        // 키보드가 완전히 올라오는 연산 속도 보정용
-        setTimeout(scrollToBottom, 200);
-    });
-</script>
-
-</body>
-</html>
