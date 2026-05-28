@@ -15,6 +15,7 @@
             --guide-color: #a0a0a0;
         }
 
+        /* 전체 화면 고정(fixed) 제거, 일반적인 높이 100% 설정 */
         html, body { 
             margin: 0;
             padding: 0;
@@ -25,7 +26,7 @@
             overflow: hidden;
         }
 
-        /* 메인 컨테이너: 고정 위치 대신 전체 화면을 차지하는 Flex 구조 배치 */
+        /* 앱 컨테이너를 화면 크기에 맞추고 내부 스크롤 구조로 변경 */
         .app-container {
             display: flex;
             flex-direction: column;
@@ -41,7 +42,7 @@
         
         #version-tag { position: absolute; bottom: 20px; font-size: 12px; color: #999; font-family: monospace; }
 
-        /* 채팅 창 영역: padding-bottom을 축소하고 스크롤 영역 자체를 유연하게 설정 */
+        /* 채팅 창 영역: 스크롤 영역을 독립적으로 격리 */
         #chat-window { 
             flex: 1; 
             overflow-y: auto; 
@@ -62,7 +63,7 @@
         /* 사용자: 오른쪽 */
         .user { align-self: flex-end; background: linear-gradient(135deg, var(--user-bubble-start), var(--user-bubble-end)); color: var(--user-text); border-bottom-right-radius: 2px; }
 
-        /* 하단 입력 영역: position: fixed 제거하여 키보드 밀림 현상 근본적 해결 */
+        /* 하단 입력 영역: fixed 대신 유연한 박스로 배치하여 하단 공백(키보드 높이)에 반응하게 함 */
         .bottom-container { 
             background: #fff; 
             border-top: 1px solid #eaeaea; 
@@ -72,6 +73,9 @@
             gap: 6px; 
             box-sizing: border-box; 
             width: 100%;
+            /* 키보드가 올라올 때 밀리지 않도록 하단 여백 변수 처리 */
+            margin-bottom: 0px; 
+            transition: margin-bottom 0.1s ease-out;
         }
         
         #guide-label { font-size: 13px; color: var(--guide-color); font-weight: 500; min-height: 18px; padding-left: 4px; }
@@ -92,13 +96,13 @@
 <div id="start-overlay">
     <p id="start-msg">AI와 대화를 나누어보세요.</p>
     <button id="start-btn">대화 시작</button>
-    <div id="version-tag">v0.1.7</div>
+    <div id="version-tag">v0.1.8</div>
 </div>
 
-<div class="app-container" id="main-app">
+<div class="app-container">
     <div id="chat-window"></div>
 
-    <div class="bottom-container">
+    <div class="bottom-container" id="bottom-bar">
         <div id="guide-label">대화 시작 버튼을 눌러주세요.</div>
         <div id="error-msg">안내된 문구와 일치하지 않습니다. 다시 입력해주세요.</div>
         
@@ -110,7 +114,7 @@
 </div>
 
 <script>
-    const APP_VERSION = "0.1.7";
+    const APP_VERSION = "0.1.8";
 
     const scenario = [
         { guide: "안녕하세요", response: "안녕하세요! 실험에 참여해주셔서 감사합니다.", systemFirst: "안녕하세요, 대화를 시작합니다. 아래 안내에 따라 답장을 입력해주세요." },
@@ -124,8 +128,8 @@
     const startOverlay = document.getElementById('start-overlay');
     const startBtn = document.getElementById('start-btn');
     const versionTag = document.getElementById('version-tag');
-    const mainApp = document.getElementById('main-app');
     const chatWindow = document.getElementById('chat-window');
+    const bottomBar = document.getElementById('bottom-bar');
     const inputField = document.getElementById('user-input');
     const sendBtn = document.getElementById('send-btn');
     const errorMsg = document.getElementById('error-msg');
@@ -134,31 +138,27 @@
     versionTag.innerText = `v${APP_VERSION}`;
 
     function scrollToBottom() {
-        // 모바일 렌더링 주기를 고려하여 시간차 스크롤 발생
+        chatWindow.scrollTop = chatWindow.scrollHeight;
         setTimeout(() => {
             chatWindow.scrollTop = chatWindow.scrollHeight;
         }, 50);
-        setTimeout(() => {
-            chatWindow.scrollTop = chatWindow.scrollHeight;
-        }, 150);
     }
 
-    // [핵심] 키보드가 올라왔을 때 실제 가시 뷰포트 높이를 계산하여 컨테이너 크기 자체를 줄임
-    function handleViewportChange() {
+    // iOS 키보드 높이 문제를 완벽히 방어하는 유일한 로직: 
+    // 화면 크기와 가시 뷰포트 차이만큼 하단에 여백(margin-bottom)을 동적으로 부여
+    function adjustKeyboardLayout() {
         if (window.visualViewport) {
-            const height = window.visualViewport.height;
-            mainApp.style.height = `${height}px`;
+            const offset = window.innerHeight - window.visualViewport.height;
+            // 키보드가 올라온 경우 여백을 주고, 내려간 경우 0으로 세팅
+            bottomBar.style.marginBottom = `${Math.max(0, offset)}px`;
             scrollToBottom();
         }
     }
     
     if (window.visualViewport) {
-        window.visualViewport.addEventListener('resize', handleViewportChange);
-        window.visualViewport.addEventListener('scroll', handleViewportChange);
+        window.visualViewport.addEventListener('resize', adjustKeyboardLayout);
+        window.visualViewport.addEventListener('scroll', adjustKeyboardLayout);
     }
-    
-    // 초기 로드 시 반영
-    handleViewportChange();
 
     function startExperiment() {
         startOverlay.style.display = 'none';
@@ -220,7 +220,10 @@
     sendBtn.addEventListener('click', handleSend);
     inputField.addEventListener('keypress', (e) => { if(e.key === 'Enter' && !inputField.disabled) handleSend(); });
     
-    inputField.addEventListener('focus', scrollToBottom);
+    inputField.addEventListener('focus', () => {
+        // 키보드가 완전히 올라오는 연산 속도 보정용
+        setTimeout(scrollToBottom, 200);
+    });
 </script>
 
 </body>
