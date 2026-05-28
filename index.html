@@ -6,68 +6,79 @@
     <title>Chat Experiment</title>
     <style>
         :root {
-            --bg-color: #f0f2f5;
-            --system-bubble: #ffffff;
-            --user-bubble: #007aff;
+            --bg-color: #f8f9fa; /* 더욱 밝은 배경색 */
+            --system-bubble: #E9E8ED; /* 요청하신 시스템 색상 */
+            --system-text: #1a1a1a;
+            --user-bubble-start: #4f95ff; /* 사용자 그라데이션 시작 */
+            --user-bubble-end: #3B86F6; /* 사용자 그라데이션 끝 (기본색) */
             --user-text: #ffffff;
-            --guide-color: #999;
+            --guide-color: #a0a0a0;
         }
 
         body { font-family: -apple-system, sans-serif; background: var(--bg-color); margin: 0; display: flex; flex-direction: column; height: 100vh; }
         
         /* 시작 모달 영역 */
-        #start-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(240, 242, 245, 0.95); display: flex; justify-content: center; align-items: center; z-index: 10; }
-        #start-btn { padding: 15px 40px; background: var(--user-bubble); color: #fff; border: none; border-radius: 8px; font-size: 18px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        #start-btn:hover { background: #0063cc; }
+        #start-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #f8f9fa; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 10; gap: 20px; }
+        #start-msg { font-size: 20px; font-weight: 600; color: #333; margin: 0; }
+        #start-btn { padding: 15px 40px; background: var(--user-bubble-end); color: #fff; border: none; border-radius: 8px; font-size: 18px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.06); transition: background 0.2s; }
+        #start-btn:hover { background: #2672e5; }
 
         /* 채팅 창 영역 */
         #chat-window { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 12px; }
 
         /* 말풍선 공통 스타일 */
-        .message { max-width: 70%; padding: 10px 14px; border-radius: 18px; font-size: 14px; line-height: 1.4; position: relative; }
+        .message { max-width: 70%; padding: 11px 16px; border-radius: 18px; font-size: 14.5px; line-height: 1.45; position: relative; box-shadow: 0 1px 2px rgba(0,0,0,0.03); }
         
         /* 시스템: 왼쪽 */
-        .system { align-self: flex-start; background: var(--system-bubble); border: 1px solid #ddd; border-bottom-left-radius: 2px; }
+        .system { align-self: flex-start; background: var(--system-bubble); color: var(--system-text); border-bottom-left-radius: 2px; }
 
         /* 사용자: 오른쪽 */
-        .user { align-self: flex-end; background: var(--user-bubble); color: var(--user-text); border-bottom-right-radius: 2px; }
+        .user { align-self: flex-end; background: linear-gradient(135deg, var(--user-bubble-start), var(--user-bubble-end)); color: var(--user-text); border-bottom-right-radius: 2px; }
 
         /* 하단 입력 영역 */
-        .input-area { background: #fff; padding: 20px; border-top: 1px solid #ddd; display: flex; gap: 10px; }
+        .bottom-container { background: #fff; border-top: 1px solid #eaeaea; padding: 15px 20px 20px 20px; display: flex; flex-direction: column; gap: 8px; }
         
-        input { flex: 1; padding: 12px; border: 1px solid #ccc; border-radius: 8px; outline: none; font-size: 14px; }
-        input::placeholder { color: var(--guide-color); }
+        /* 상단 고정 입력 가이드 */
+        #guide-label { font-size: 13px; color: var(--guide-color); font-weight: 500; min-height: 18px; padding-left: 4px; }
+
+        .input-area { display: flex; gap: 10px; }
+        input { flex: 1; padding: 12px; border: 1px solid #e0e0e0; border-radius: 8px; outline: none; font-size: 14.5px; background: #fafafa; }
+        input:focus { border-color: var(--user-bubble-end); background: #fff; }
+        input::placeholder { color: #ccc; }
         
-        button.send-btn { padding: 0 20px; background: var(--user-bubble); color: #fff; border: none; border-radius: 8px; cursor: pointer; }
-        button.send-btn:disabled { background: #ccc; cursor: default; }
+        button.send-btn { padding: 0 24px; background: var(--user-bubble-end); color: #fff; border: none; border-radius: 8px; font-size: 14.5px; font-weight: 600; cursor: pointer; }
+        button.send-btn:disabled { background: #e0e0e0; color: #a0a0a0; cursor: default; }
 
         /* 에러 메시지 */
-        #error-msg { color: #ff3b30; font-size: 12px; margin-top: 5px; display: none; padding-left: 20px; padding-bottom: 10px; }
+        #error-msg { color: #ff3b30; font-size: 12px; margin: 0; display: none; padding-left: 4px; }
     </style>
 </head>
 <body>
 
 <div id="start-overlay">
+    <p id="start-msg">AI와 대화를 나누어보세요.</p>
     <button id="start-btn">대화 시작</button>
 </div>
 
 <div id="chat-window">
     </div>
 
-<div id="error-msg">안내된 문구와 일치하지 않습니다. 다시 입력해주세요.</div>
-
-<div class="input-area">
-    <input type="text" id="user-input" autocomplete="off" disabled placeholder="대화 시작 버튼을 눌러주세요.">
-    <button id="send-btn" class="send-btn" disabled>전송</button>
+<div class="bottom-container">
+    <div id="guide-label">대화 시작 버튼을 눌러주세요.</div>
+    <div id="error-msg">안내된 문구와 일치하지 않습니다. 다시 입력해주세요.</div>
+    
+    <div class="input-area">
+        <input type="text" id="user-input" autocomplete="off" disabled placeholder="텍스트를 입력하세요.">
+        <button id="send-btn" class="send-btn" disabled>전송</button>
+    </div>
 </div>
 
 <script>
-    // 1. 실험 시나리오 설정 (시스템이 선제공하는 인사말이 첫 response가 됩니다)
     const scenario = [
-        { guide: "안녕하세요", response: "안녕하세요! 실험에 참여해주셔서 감사합니다.", systemFirst: "안녕하세요, 대화를 시작합니다. 아래 안내에 따라 답장을 입력해주세요." },
-        { guide: "실험 절차를 알려주세요", response: "안내되는 문구를 그대로 입력하시면 대화가 진행됩니다." },
-        { guide: "알겠습니다", response: "좋습니다. 이제 다음 단계로 넘어갑니다." },
-        { guide: "종료", response: "모든 대화가 완료되었습니다. 창을 닫아주세요." }
+        { guide: "반가워!", response: "오늘 기분은 어때요?", systemFirst: "안녕하세요! 반가워요!" },
+        { guide: "기분 좋아!", response: "좋은 일이 있었나요?" },
+        { guide: "그냥 좋아!", response: "그렇군요! 좋은 일이 가득할 거에요!" },
+        { guide: "고마워!", response: "모든 대화가 완료되었습니다. 창을 닫아주세요." }
     ];
 
     let currentTurn = 0;
@@ -78,33 +89,33 @@
     const inputField = document.getElementById('user-input');
     const sendBtn = document.getElementById('send-btn');
     const errorMsg = document.getElementById('error-msg');
+    const guideLabel = document.getElementById('guide-label');
 
-    // 대화 시작 처리
     function startExperiment() {
-        startOverlay.style.display = 'none'; // 시작 화면 숨김
+        startOverlay.style.display = 'none';
         inputField.disabled = false;
         sendBtn.disabled = false;
         
-        // 시스템 첫 메시지 출력 (0.3초 뒤)
         setTimeout(() => {
             appendMessage(scenario[0].systemFirst, 'system');
-            updateGuide(); // 시스템 첫 메시지 이후 사용자가 입력할 가이드 활성화
+            updateGuide();
         }, 300);
     }
 
-    // 가이드 텍스트 설정
     function updateGuide() {
         if (currentTurn < scenario.length) {
-            inputField.placeholder = `입력: ${scenario[currentTurn].guide}`;
+            // 사용자가 타이핑 중에도 상단 레이블을 통해 가이드가 계속 보임
+            guideLabel.innerText = `작성 가이드: "${scenario[currentTurn].guide}"`;
             inputField.value = "";
+            inputField.focus();
         } else {
+            guideLabel.innerText = "대화가 종료되었습니다.";
             inputField.placeholder = "대화 종료";
             inputField.disabled = true;
             sendBtn.disabled = true;
         }
     }
 
-    // 메시지 화면 추가
     function appendMessage(text, sender) {
         const msgDiv = document.createElement('div');
         msgDiv.className = `message ${sender}`;
@@ -113,25 +124,21 @@
         chatWindow.scrollTop = chatWindow.scrollHeight;
     }
 
-    // 전송 로직
     function handleSend() {
         const userInput = inputField.value.trim();
         const target = scenario[currentTurn].guide;
 
-        // 에러 처리: 정확한 입력 확인
         if (userInput !== target) {
             errorMsg.style.display = 'block';
             inputField.style.borderColor = '#ff3b30';
             return;
         }
 
-        // 정상 입력 시
         errorMsg.style.display = 'none';
-        inputField.style.borderColor = '#ccc';
+        inputField.style.borderColor = '#e0e0e0';
         
         appendMessage(userInput, 'user');
 
-        // 시스템 응답 (0.5초 후)
         setTimeout(() => {
             appendMessage(scenario[currentTurn].response, 'system');
             currentTurn++;
@@ -139,7 +146,6 @@
         }, 500);
     }
 
-    // 이벤트 리스너 등록
     startBtn.addEventListener('click', startExperiment);
     sendBtn.addEventListener('click', handleSend);
     inputField.addEventListener('keypress', (e) => { if(e.key === 'Enter' && !inputField.disabled) handleSend(); });
