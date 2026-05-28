@@ -13,23 +13,25 @@
             --user-bubble-end: #3B86F6;
             --user-text: #ffffff;
             --guide-color: #a0a0a0;
-            --vh: 1vh;
         }
 
-        /* 전체 스크롤을 막고 내부 스크롤만 허용 */
         html, body { 
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            overflow: hidden;
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
             background: var(--bg-color);
+            font-family: -apple-system, sans-serif; 
+            overflow: hidden;
         }
 
-        body { 
-            font-family: -apple-system, sans-serif; 
-            margin: 0; 
-            display: flex; 
-            flex-direction: column; 
-            height: calc(var(--vh, 1vh) * 100); 
+        /* 메인 컨테이너: 고정 위치 대신 전체 화면을 차지하는 Flex 구조 배치 */
+        .app-container {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            height: 100%;
+            box-sizing: border-box;
         }
         
         /* 시작 모달 영역 */
@@ -39,11 +41,11 @@
         
         #version-tag { position: absolute; bottom: 20px; font-size: 12px; color: #999; font-family: monospace; }
 
-        /* 채팅 창 영역: 하단 고정 바 높이만큼 padding-bottom 확보 및 유연한 크기 축소(flex: 1) */
+        /* 채팅 창 영역: padding-bottom을 축소하고 스크롤 영역 자체를 유연하게 설정 */
         #chat-window { 
             flex: 1; 
             overflow-y: auto; 
-            padding: 15px 15px 140px 15px; 
+            padding: 15px; 
             display: flex; 
             flex-direction: column; 
             gap: 12px; 
@@ -60,12 +62,8 @@
         /* 사용자: 오른쪽 */
         .user { align-self: flex-end; background: linear-gradient(135deg, var(--user-bubble-start), var(--user-bubble-end)); color: var(--user-text); border-bottom-right-radius: 2px; }
 
-        /* 하단 입력 영역: 상단 경계선 및 여백 고정 */
+        /* 하단 입력 영역: position: fixed 제거하여 키보드 밀림 현상 근본적 해결 */
         .bottom-container { 
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            width: 100%;
             background: #fff; 
             border-top: 1px solid #eaeaea; 
             padding: 12px 15px calc(12px + env(safe-area-inset-bottom)) 15px; 
@@ -73,7 +71,7 @@
             flex-direction: column; 
             gap: 6px; 
             box-sizing: border-box; 
-            z-index: 5;
+            width: 100%;
         }
         
         #guide-label { font-size: 13px; color: var(--guide-color); font-weight: 500; min-height: 18px; padding-left: 4px; }
@@ -94,24 +92,25 @@
 <div id="start-overlay">
     <p id="start-msg">AI와 대화를 나누어보세요.</p>
     <button id="start-btn">대화 시작</button>
-    <div id="version-tag">v0.1.6</div>
+    <div id="version-tag">v0.1.7</div>
 </div>
 
-<div id="chat-window">
-    </div>
+<div class="app-container" id="main-app">
+    <div id="chat-window"></div>
 
-<div class="bottom-container">
-    <div id="guide-label">대화 시작 버튼을 눌러주세요.</div>
-    <div id="error-msg">안내된 문구와 일치하지 않습니다. 다시 입력해주세요.</div>
-    
-    <div class="input-area">
-        <input type="text" id="user-input" autocomplete="off" disabled placeholder="텍스트를 입력하세요.">
-        <button id="send-btn" class="send-btn" disabled>전송</button>
+    <div class="bottom-container">
+        <div id="guide-label">대화 시작 버튼을 눌러주세요.</div>
+        <div id="error-msg">안내된 문구와 일치하지 않습니다. 다시 입력해주세요.</div>
+        
+        <div class="input-area">
+            <input type="text" id="user-input" autocomplete="off" disabled placeholder="텍스트를 입력하세요.">
+            <button id="send-btn" class="send-btn" disabled>전송</button>
+        </div>
     </div>
 </div>
 
 <script>
-    const APP_VERSION = "0.1.6"; // 스크롤 보정 버전 업
+    const APP_VERSION = "0.1.7";
 
     const scenario = [
         { guide: "안녕하세요", response: "안녕하세요! 실험에 참여해주셔서 감사합니다.", systemFirst: "안녕하세요, 대화를 시작합니다. 아래 안내에 따라 답장을 입력해주세요." },
@@ -125,6 +124,7 @@
     const startOverlay = document.getElementById('start-overlay');
     const startBtn = document.getElementById('start-btn');
     const versionTag = document.getElementById('version-tag');
+    const mainApp = document.getElementById('main-app');
     const chatWindow = document.getElementById('chat-window');
     const inputField = document.getElementById('user-input');
     const sendBtn = document.getElementById('send-btn');
@@ -133,22 +133,32 @@
 
     versionTag.innerText = `v${APP_VERSION}`;
 
-    // 스크롤 최하단 이동 함수 최적화
     function scrollToBottom() {
+        // 모바일 렌더링 주기를 고려하여 시간차 스크롤 발생
         setTimeout(() => {
             chatWindow.scrollTop = chatWindow.scrollHeight;
-        }, 80);
+        }, 50);
+        setTimeout(() => {
+            chatWindow.scrollTop = chatWindow.scrollHeight;
+        }, 150);
     }
 
-    function setScreenSize() {
-        let vh = window.innerHeight * 0.01;
-        document.documentElement.style.setProperty('--vh', `${vh}px`);
-        scrollToBottom(); // 화면 크기 변경 시 스크롤 동기화
+    // [핵심] 키보드가 올라왔을 때 실제 가시 뷰포트 높이를 계산하여 컨테이너 크기 자체를 줄임
+    function handleViewportChange() {
+        if (window.visualViewport) {
+            const height = window.visualViewport.height;
+            mainApp.style.height = `${height}px`;
+            scrollToBottom();
+        }
     }
     
-    window.addEventListener('resize', setScreenSize);
-    window.addEventListener('orientationchange', setScreenSize);
-    setScreenSize();
+    if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', handleViewportChange);
+        window.visualViewport.addEventListener('scroll', handleViewportChange);
+    }
+    
+    // 초기 로드 시 반영
+    handleViewportChange();
 
     function startExperiment() {
         startOverlay.style.display = 'none';
@@ -210,7 +220,6 @@
     sendBtn.addEventListener('click', handleSend);
     inputField.addEventListener('keypress', (e) => { if(e.key === 'Enter' && !inputField.disabled) handleSend(); });
     
-    // 모바일 키보드 활성화 시 강제 스크롤 제어
     inputField.addEventListener('focus', scrollToBottom);
 </script>
 
