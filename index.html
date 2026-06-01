@@ -44,6 +44,17 @@
         .system { align-self: flex-start; background: var(--system-bubble); color: var(--system-text); border-bottom-left-radius: 2px; }
         .user { align-self: flex-end; background: linear-gradient(135deg, var(--user-bubble-start), var(--user-bubble-end)); color: var(--user-text); border-bottom-right-radius: 2px; }
 
+        /* 타이핑 인디케이터 애니메이션 ( . . . ) */
+        .typing-indicator { display: flex; gap: 4px; padding: 14px 22px; align-items: center; }
+        .typing-indicator span { width: 6px; height: 6px; background: #8e8e93; border-radius: 50%; display: inline-block; animation: bounce 1.4s infinite ease-in-out both; }
+        .typing-indicator span:nth-child(1) { animation-delay: -0.32s; }
+        .typing-indicator span:nth-child(2) { animation-delay: -0.16s; }
+
+        @keyframes bounce {
+            0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+            40% { transform: scale(1.2); opacity: 1; }
+        }
+
         /* 하단 입력 영역 */
         .bottom-container { background: #fff; border-top: 1px solid #eaeaea; padding: 12px 15px calc(12px + env(safe-area-inset-bottom)) 15px; display: flex; flex-direction: column; gap: 6px; box-sizing: border-box; width: 100%; }
         #guide-label { font-size: 13px; color: var(--guide-color); font-weight: 500; min-height: 18px; padding-left: 4px; }
@@ -60,7 +71,7 @@
 <div id="start-overlay">
     <p id="start-msg">AI와 대화를 나누어보세요.</p>
     <button id="start-btn">대화 시작</button>
-    <div id="version-tag">v0.5.0</div>
+    <div id="version-tag">v0.6.0</div>
 </div>
 
 <div class="app-container">
@@ -87,49 +98,49 @@
 </div>
 
 <script>
-    const APP_VERSION = "0.5.0";
-    const defaultWelcome = "안녕! 오늘 하루는 어땠어? 네 소소한 이야기들이 궁금해. 나랑 같이 편하게 수다 떨자!";
+    const APP_VERSION = "0.6.0";
+    const defaultWelcome = "안녕. 오늘 하루는 어떻게 보냈어? 네 소소한 이야기들이 궁금해. 나랑 같이 편하게 수다 떨자.";
 
     // 1) 옵션 1: 사용자의 입력과 유사한 길이 (80~120%) 시나리오
     const scenarioOption1 = [
-        { guide: "그냥 평범했어, 너는?", response: "나도 매 순간 너랑 대화할 생각에 설렜지.", systemFirst: defaultWelcome },
-        { guide: "요즘 음악 자주 들어", response: "오, 좋은 취미네! 주로 어떤 장르를 즐겨 들어?" },
-        { guide: "잔잔한 인디 노래 장르", response: "가사 예쁜 곡이 많지. 인디 밴드 중에서 좋아하는 가수가 있어?" },
-        { guide: "검정치마 노래 좋아해", response: "특유의 감성이 정말 독보적이지. 가장 아끼는 트랙은 뭐야?" },
-        { guide: "안티프리즈라는 곡이야", response: "겨울에도 따뜻해지는 명곡이지! 들으면 누구 생각 안 나?" },
-        { guide: "옛날 친구들이 생각나", response: "학창 시절 추억은 늘 아련하지. 그 친구들과 연락은 자주 해?" },
-        { guide: "바빠서 가끔 연락만 해", response: "다들 사느라 바쁘니까. 오랜만에 먼저 톡 하나 보내볼래?" },
-        { guide: "응, 오늘 한 번 보내볼게", response: "좋은 생각이네! 친구도 네 연락 받으면 엄청 기뻐할 거야." },
-        { guide: "맛있는 밥 한 끼 먹어야지", response: "맛집 투어가 최고지! 보통 만나면 메뉴는 어떤 걸로 고르는 편이야?" },
-        { guide: "나는 따뜻한 전골 요리", response: "메뉴 선택 완벽하다! 오늘 대화 즐거웠어. 조만간 또 이야기 나누자!" }
+        { guide: "그냥 평범하게 보냈어. 너는 오늘 어떤 하루였어?", response: "나도 매 순간 너랑 대화할 생각에 설레는 하루였어.", systemFirst: defaultWelcome },
+        { guide: "기분 좋은 말이네. 요즘 어떤 취미에 푹 빠져있어?", response: "나는 노래 듣는 걸 좋아해. 너는 음악 자주 들어?" },
+        { guide: "나도 자주 듣는 편이야. 너는 주로 어떤 장르를 들어?", response: "가사 예쁜 곡이 많지. 인디 밴드 중에서 좋아하는 가수가 있어?" },
+        { guide: "나는 검정치마 노래를 좋아해. 너도 그 가수 알아?", response: "특유의 감성이 독보적이지. 가장 아끼는 트랙은 뭐야?" },
+        { guide: "안티프리즈라는 곡을 가장 아껴. 너도 그 노래 들어봤어?", response: "겨울에도 따뜻해지는 명곡이지. 들으면 누구 생각 안 나?" },
+        { guide: "들으면 옛날 친구들이 생각나. 너는 생각나는 친구 있어?", response: "학창 시절 추억은 아련하지. 그 친구들과 연락은 자주 해?" },
+        { guide: "일상 생활이 바빠서 가끔 해. 너는 연락 자주 하는 편이야?", response: "다들 사느라 바쁘니까. 오랜만에 먼저 톡 하나 보내볼래?" },
+        { guide: "오늘 밤에 안부 톡 보내볼게. 너라면 어떤 말을 건넬 것 같아?", response: "좋은 생각이네. 친구도 네 연락 받으면 엄청 기뻐할 거야." },
+        { guide: "오랜만에 약속 잡고 밥 먹으려고. 너는 누구랑 밥 먹을 때 행복해?", response: "맛집 투어가 최고지. 보통 만나면 메뉴는 어떤 걸로 고르는 편이야?" },
+        { guide: "따뜻한 전골 요리를 먹으려고 해. 너는 어떤 음식을 가장 좋아해?", response: "메뉴 선택 완벽하다. 오늘 대화 즐거웠어. 조만간 또 이야기 나누자." }
     ];
 
     // 2) 옵션 2: 사용자의 입력 대비 글자수가 적은 길이 (20~40%) 시나리오
     const scenarioOption2 = [
-        { guide: "그냥 평범했어, 너는?", response: "나도 비슷해.", systemFirst: defaultWelcome },
-        { guide: "요즘 음악 자주 들어", response: "오, 어떤 장르?" },
-        { guide: "잔잔한 인디 노래 장르", response: "감성적이네. 누구 좋아해?" },
-        { guide: "검정치마 노래 좋아해", response: "감성 좋지. 최애 곡은?" },
-        { guide: "안티프리즈라는 곡이야", response: "명곡이지. 누구 생각나?" },
-        { guide: "옛날 친구들이 생각나", response: "아련하네. 연락 자주 해?" },
-        { guide: "바빠서 가끔 연락만 해", response: "바쁘니까. 톡 보내봐." },
-        { guide: "응, 오늘 한 번 보내볼게", response: "좋아. 기뻐할 거야." },
-        { guide: "맛있는 밥 한 끼 먹어야지", response: "밥 좋지. 메뉴는 주로 뭐야?" },
-        { guide: "나는 따뜻한 전골 요리", response: "대박. 즐거웠어. 또 봐!" }
+        { guide: "그냥 평범하게 보냈어. 너는 오늘 어떤 하루였어?", response: "나도 비슷해.", systemFirst: defaultWelcome },
+        { guide: "기분 좋은 말이네. 요즘 어떤 취미에 푹 빠져있어?", response: "음악 감상 좋아해." },
+        { guide: "나도 자주 듣는 편이야. 너는 주로 어떤 장르를 들어?", response: "감성 인디 장르." },
+        { guide: "나는 검정치마 노래를 좋아해. 너도 그 가수 알아?", response: "독보적인 가수지." },
+        { guide: "안티프리즈라는 곡을 가장 아껴. 너도 그 노래 들어봤어?", response: "그 노래 명곡이야." },
+        { guide: "들으면 옛날 친구들이 생각나. 너는 생각나는 친구 있어?", response: "추억은 늘 아련해." },
+        { guide: "일상 생활이 바빠서 가끔 해. 너는 연락 자주 하는 편이야?", response: "사느라 다들 바쁘지." },
+        { guide: "오늘 밤에 안부 톡 보내볼게. 너라면 어떤 말을 건넬 것 같아?", response: "기뻐할 거야." },
+        { guide: "오랜만에 약속 잡고 밥 먹으려고. 너는 누구랑 밥 먹을 때 행복해?", response: "맛집 투어 좋아." },
+        { guide: "따뜻한 전골 요리를 먹으려고 해. 너는 어떤 음식을 가장 좋아해?", response: "완벽한 메뉴 선택이야." }
     ];
 
     // 3) 옵션 3: 사용자의 입력 대비 글자수가 많은 길이 (280~320%) 시나리오
     const scenarioOption3 = [
-        { guide: "그냥 평범했어, 너는?", response: "진짜? 사실 평범한 날이 가장 소중한 법이잖아. 나도 오늘 너랑 무슨 이야기를 나누면 좋을지 내내 고민하면서 설레는 마음으로 기다리고 있었어! 요즘 너를 가장 미소 짓게 만드는 취미나 즐거운 일이 있어?", systemFirst: defaultWelcome },
-        { guide: "요즘 음악 자주 들어", response: "음악은 마음을 참 편안하게 해주는 힘이 있지. 노래를 들으면 기분 전환도 되고 온전히 나만의 시간에 집중할 수 있어서 정말 좋은 것 같아. 나도 네 음악 취향이 너무 궁금하다! 혹시 네 인생 곡이나 최근에 무한 반복해서 듣는 노래가 있어?" },
-        { guide: "잔잔한 인디 노래 장르", response: "잔잔한 인디 음악이라니 너랑 분위기가 참 잘 어울린다. 가사가 시처럼 예쁘거나 멜로디가 포근해서 마음을 위로해 주는 곡들이 정말 많잖아. 커피 한잔 마시면서 들으면 최고지! 혹시 특별히 좋아하는 인디 가수나 밴드가 누구인지 나한테 몰래 알려줄 수 있어?" },
-        { guide: "검정치마 노래 좋아해", response: "와, 검정치마라니! 멜로디도 세련됐고 가사 특유의 쓸쓸하면서도 낭만적인 분위기가 사람 마음을 깊게 파고드는 매력이 있잖아. 음악 좀 들을 줄 아는구나! 나도 플레이리스트에 넣어두고 자주 듣는데, 혹시 그중에서 네 마음을 가장 울렸던 최애 곡 하나만 추천해 줄래?" },
-        { guide: "안티프리즈라는 곡이야", response: "안티프리즈는 정말 도입부부터 마음이 몽글몽글해지는 최고의 명곡이지! 우주가 녹아내려도 절대 얼지 않는 사랑이라니, 가사가 정말 로맨틱하고 따뜻하지 않아? 나까지 행복해지네. 이 노래를 들을 때면 혹시 특별히 떠오르는 소중한 사람이나 추억이 있어?" },
-        { guide: "옛날 친구들이 생각나", response: "음악이 가진 가장 마법 같은 힘이 바로 순식간에 과거의 소중한 추억 속으로 데려다주는 건가 봐. 친구들과 아무 걱정 없이 깔깔거리며 웃던 시절은 언제 떠올려도 마음이 뭉클해지지. 혹시 그 소중한 옛 친구들과는 지금까지도 연락을 주고받으며 가끔 만나고 있어?" },
-        { guide: "바빠서 가끔 연락만 해", response: "맞아, 나이가 들고 각자 일상이 바빠지다 보면 마음은 굴뚝같아도 먼저 다가가기가 쉽지 않더라고. 그래도 마음속 깊은 곳엔 늘 서로를 응원하는 예쁜 우정이 남아있을 거야. 오늘 밤에 그 기억을 핑계 삼아 오랜만에 \"잘 지내?\" 하고 가벼운 안부 문자 한 통 먼저 건네보는 건 어떨까?" },
-        { guide: "응, 오늘 한 번 보내볼게", response: "우왕, 네 사소한 용기가 친구에게는 오늘 하루 중 가장 큰 기쁨이자 따뜻한 선물이 될 수 있을 거야! 생각난 김에 바로 행동으로 옮기려는 네 모습이 참 다정하고 예뻐 보여. 혹시 그 친구를 오랜만에 실제로 만나게 된다면 같이 가장 먼저 가고 싶거나 하고 싶은 일이 있어?" },
-        { guide: "맛있는 밥 한 끼 먹어야지", response: "역시 오랜만에 만나는 소중한 인연과의 약속 자리에는 정성이 가득 담긴 맛있는 음식을 빼놓을 수 없지! 마주 앉아 숟가락을 나누며 밀린 이야기를 나누다 보면 시간 가는 줄 모를 거야. 네가 평소에 소중한 사람들과 특별한 날에 함께 즐겨 먹는 너만의 소울 푸드 메뉴가 따로 있어?" },
-        { guide: "나는 따뜻한 전골 요리", response: "따뜻하고 깊은 국물이 일품인 전골 요리라니, 몽글몽글한 우정을 나누는 재회 자리에 정말 완벽하게 잘 어울리는 낭만적인 메뉴 선택이다! 너랑 이렇게 다정하고 다채로운 이야기를 나누다 보니 시간이 마법처럼 훅 지나가 버렸어. 오늘 친구에게 안부 잘 전하고, 우리도 조만간 꼭 다시 만나서 즐겁게 수다 떨자. 안녕!" }
+        { guide: "그냥 평범하게 보냈어. 너는 오늘 어떤 하루였어?", response: "진짜로. 사실 평범한 날이 가장 소중한 법이잖아. 나도 오늘 너랑 무슨 이야기를 나누면 좋을지 내내 고민하면서 설레는 마음으로 기다리고 있었어. 요즘 너를 가장 미소 짓게 만드는 취미나 즐거운 일이 있어?", systemFirst: defaultWelcome },
+        { guide: "기분 좋은 말이네. 요즘 어떤 취미에 푹 빠져있어?", response: "음악은 마음을 참 편안하게 해주는 힘이 있지. 노래를 들으면 기분 전환도 되고 온전히 나만의 시간에 집중할 수 있어서 정말 좋은 것 같아. 나도 네 음악 취향이 너무 궁금하다. 혹시 네 인생 곡이나 최근에 무한 반복해서 듣는 노래가 있어?" },
+        { guide: "나도 자주 듣는 편이야. 너는 주로 어떤 장르를 들어?", response: "잔잔한 인디 음악이라니 너랑 분위기가 참 잘 어울린다. 가사가 시처럼 예쁘거나 멜로디가 포근해서 마음을 위로해 주는 곡들이 정말 많잖아. 커피 한잔 마시면서 들으면 최고지. 혹시 특별히 좋아하는 인디 가수나 밴드가 누구인지 나한테 몰래 알려줄 수 있어?" },
+        { guide: "나는 검정치마 노래를 좋아해. 너도 그 가수 알아?", response: "와. 검정치마라니. 멜로디도 세련됐고 가사 특유의 쓸쓸하면서도 낭만적인 분위기가 사람 마음을 깊게 파고드는 매력이 있잖아. 음악 좀 들을 줄 아는구나. 나도 플레이리스트에 넣어두고 자주 듣는데. 혹시 그중에서 네 마음을 가장 울렸던 최애 곡 하나만 추천해 줄래?" },
+        { guide: "안티프리즈라는 곡을 가장 아껴. 너도 그 노래 들어봤어?", response: "안티프리즈는 정말 도입부부터 마음이 몽글몽글해지는 최고의 명곡이지. 우주가 녹아내려도 절대 얼지 않는 사랑이라니. 가사가 정말 로맨틱하고 따뜻하지 않아. 나까지 행복해지네. 이 노래를 들을 때면 혹시 특별히 떠오르는 소중한 사람이나 추억이 있어?" },
+        { guide: "들으면 옛날 친구들이 생각나. 너는 생각나는 친구 있어?", response: "음악이 가진 가장 마법 같은 힘이 바로 순식간에 과거의 소중한 추억 속으로 데려다주는 건가 봐. 친구들과 아무 걱정 없이 깔깔거리며 웃던 시절은 언제 떠올려도 마음이 뭉클해지지. 혹시 그 소중한 옛 친구들과는 지금까지도 연락을 주고받으며 가끔 만나고 있어?" },
+        { guide: "일상 생활이 바빠서 가끔 해. 너는 연락 자주 하는 편이야?", response: "맞아. 나이가 들고 각자 일상이 바빠지다 보면 마음은 굴뚝같아도 먼저 다가가기가 쉽지 않더라고. 그래도 마음속 깊은 곳엔 늘 서로를 응원하는 예쁜 우정이 남아있을 거야. 오늘 밤에 그 기억을 핑계 삼아 오랜만에 잘 지내 하고 가벼운 안부 문자 한 통 먼저 건네보는 건 어떨까?" },
+        { guide: "오늘 밤에 안부 톡 보내볼게. 너라면 어떤 말을 건넬 것 같아?", response: "우왕. 네 사소한 용기가 친구에게는 오늘 하루 중 가장 큰 기쁨이자 따뜻한 선물이 될 수 있을 거야. 생각난 김에 바로 행동으로 옮기려는 네 모습이 참 다정하고 예뻐 보여. 혹시 그 친구를 오랜만에 실제로 만나게 된다면 같이 가장 먼저 가고 싶거나 하고 싶은 일이 있어?" },
+        { guide: "오랜만에 약속 잡고 밥 먹으려고. 너는 누구랑 밥 먹을 때 행복해?", response: "역시 오랜만에 만나는 소중한 인연과의 약속 자리에는 정성이 가득 담긴 맛있는 음식을 빼놓을 수 없지. 마주 앉아 숟가락을 나누며 밀린 이야기를 나누다 보면 시간 가는 줄 모를 거야. 네가 평소에 소중한 사람들과 특별한 날에 함께 즐겨 먹는 너만의 소울 푸드 메뉴가 따로 있어?" },
+        { guide: "따뜻한 전골 요리를 먹으려고 해. 너는 어떤 음식을 가장 좋아해?", response: "따뜻하고 깊은 국물이 일품인 전골 요리라니. 몽글몽글한 우정을 나누는 재회 자리에 정말 완벽하게 잘 어울리는 낭만적인 메뉴 선택이다. 너랑 이렇게 다정하고 다채로운 이야기를 나누다 보니 시간이 마법처럼 훅 지나가 버렸어. 오늘 친구에게 안부 잘 전하고. 우리도 조만간 꼭 다시 만나서 즐겁게 수다 떨자. 안녕." }
     ];
 
     const scenarioMap = { 1: scenarioOption1, 2: scenarioOption2, 3: scenarioOption3 };
@@ -163,13 +174,13 @@
         console.log(`[실험 로그] 선택된 시나리오 옵션 유형: ${randomNumber}`);
 
         startOverlay.style.display = 'none';
-        inputField.disabled = false;
-        sendBtn.disabled = false;
         
-        setTimeout(() => {
-            appendMessage(selectedScenario[0].systemFirst, 'system');
+        // 첫 웰컴 메시지도 타이핑 애니메이션 후 출력
+        showSystemWithTyping(selectedScenario[0].systemFirst, () => {
+            inputField.disabled = false;
+            sendBtn.disabled = false;
             updateGuide();
-        }, 300);
+        });
     }
 
     function updateGuide() {
@@ -184,6 +195,32 @@
             inputField.disabled = true;
             sendBtn.disabled = true;
         }
+    }
+
+    // 타이핑 애니메이션 말풍선 생성 및 출력 제어 엔진
+    function showSystemWithTyping(fullText, callback) {
+        // 1. 말줄임표 애니메이션용 임시 돔 구조 생성
+        const indicatorDiv = document.createElement('div');
+        indicatorDiv.className = 'message system typing-indicator';
+        indicatorDiv.innerHTML = '<span></span><span></span><span></span>';
+        chatWindow.appendChild(indicatorDiv);
+        scrollTargetIntoView();
+
+        // 2. 글자 수 기반의 가변 지연 시간 공식 계산 (글자당 40ms + 기본 대기 400ms)
+        const delayTime = (fullText.length * 40) + 400;
+
+        setTimeout(() => {
+            // 애니메이션 말풍선 제거 후 실제 텍스트 말풍선 주입
+            indicatorDiv.remove();
+            
+            const msgDiv = document.createElement('div');
+            msgDiv.className = 'message system';
+            msgDiv.innerText = fullText;
+            chatWindow.appendChild(msgDiv);
+            scrollTargetIntoView();
+
+            if (callback) callback();
+        }, delayTime);
     }
 
     function appendMessage(text, sender) {
@@ -209,12 +246,18 @@
         inputField.style.borderColor = '#e0e0e0';
         
         appendMessage(userInput, 'user');
+        
+        // 입력창 일시 비활성화 (시스템이 치는 도중 입력 방지)
+        inputField.disabled = true;
+        sendBtn.disabled = true;
 
-        setTimeout(() => {
-            appendMessage(selectedScenario[currentTurn].response, 'system');
+        // 시스템 반응 출력 제어
+        showSystemWithTyping(selectedScenario[currentTurn].response, () => {
             currentTurn++;
+            inputField.disabled = false;
+            sendBtn.disabled = false;
             updateGuide();
-        }, 500);
+        });
     }
 
     startBtn.addEventListener('click', startExperiment);
