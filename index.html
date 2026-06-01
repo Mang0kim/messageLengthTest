@@ -71,7 +71,7 @@
 <div id="start-overlay">
     <p id="start-msg">AI와 대화를 나누어보세요.</p>
     <button id="start-btn">대화 시작</button>
-    <div id="version-tag">v0.6.0</div>
+    <div id="version-tag">v0.6.2</div>
 </div>
 
 <div class="app-container">
@@ -98,7 +98,7 @@
 </div>
 
 <script>
-    const APP_VERSION = "0.6.0";
+    const APP_VERSION = "0.6.2";
     const defaultWelcome = "안녕. 오늘 하루는 어떻게 보냈어? 네 소소한 이야기들이 궁금해. 나랑 같이 편하게 수다 떨자.";
 
     // 1) 옵션 1: 사용자의 입력과 유사한 길이 (80~120%) 시나리오
@@ -115,18 +115,18 @@
         { guide: "따뜻한 전골 요리를 먹으려고 해. 너는 어떤 음식을 가장 좋아해?", response: "메뉴 선택 완벽하다. 오늘 대화 즐거웠어. 조만간 또 이야기 나누자." }
     ];
 
-    // 2) 옵션 2: 사용자의 입력 대비 글자수가 적은 길이 (20~40%) 시나리오
+    // 2) 옵션 2: 사용자의 입력 대비 글자수가 적은 길이 (20~40%) 시나리오 + 60% 질문 종료 대응
     const scenarioOption2 = [
-        { guide: "그냥 평범하게 보냈어. 너는 오늘 어떤 하루였어?", response: "나도 비슷해.", systemFirst: defaultWelcome },
-        { guide: "기분 좋은 말이네. 요즘 어떤 취미에 푹 빠져있어?", response: "음악 감상 좋아해." },
-        { guide: "나도 자주 듣는 편이야. 너는 주로 어떤 장르를 들어?", response: "감성 인디 장르." },
-        { guide: "나는 검정치마 노래를 좋아해. 너도 그 가수 알아?", response: "독보적인 가수지." },
-        { guide: "안티프리즈라는 곡을 가장 아껴. 너도 그 노래 들어봤어?", response: "그 노래 명곡이야." },
-        { guide: "들으면 옛날 친구들이 생각나. 너는 생각나는 친구 있어?", response: "추억은 늘 아련해." },
-        { guide: "일상 생활이 바빠서 가끔 해. 너는 연락 자주 하는 편이야?", response: "사느라 다들 바쁘지." },
+        { guide: "그냥 평범하게 보냈어. 너는 오늘 어떤 하루였어?", response: "나도 평범해.", systemFirst: defaultWelcome },
+        { guide: "기분 좋은 말이네. 요즘 어떤 취미에 푹 빠져있어?", response: "음악 들어?", minTurn: true }, // 질문 (3자/27%)
+        { guide: "나도 자주 듣는 편이야. 너는 주로 어떤 장르를 들어?", response: "어떤 인디?", minTurn: true }, // 질문 (5자/19% -> 의미 축약형 고정)
+        { guide: "나는 검정치마 노래를 좋아해. 너도 그 가수 알아?", response: "그 가수가?", minTurn: true }, // 질문 (5자/20%)
+        { guide: "안티프리즈라는 곡을 가장 아껴. 너도 그 노래 들어봤어?", response: "좋은 곡인가?", minTurn: true }, // 질문 (6자/22%)
+        { guide: "들으면 옛날 친구들이 생각나. 너는 생각나는 친구 있어?", response: "연락 자주 해?", minTurn: true }, // 질문 (6자/24%)
+        { guide: "일상 생활이 바빠서 가끔 해. 너는 연락 자주 하는 편이야?", response: "선톡 할래?", minTurn: true }, // 질문 (5자/17%)
         { guide: "오늘 밤에 안부 톡 보내볼게. 너라면 어떤 말을 건넬 것 같아?", response: "기뻐할 거야." },
-        { guide: "오랜만에 약속 잡고 밥 먹으려고. 너는 누구랑 밥 먹을 때 행복해?", response: "맛집 투어 좋아." },
-        { guide: "따뜻한 전골 요리를 먹으려고 해. 너는 어떤 음식을 가장 좋아해?", response: "완벽한 메뉴 선택이야." }
+        { guide: "오랜만에 약속 잡고 밥 먹으려고. 너는 누구랑 밥 먹을 때 행복해?", response: "맛집 투어지." },
+        { guide: "따뜻한 전골 요리를 먹으려고 해. 너는 어떤 음식을 가장 좋아해?", response: "나도 전골이야." }
     ];
 
     // 3) 옵션 3: 사용자의 입력 대비 글자수가 많은 길이 (280~320%) 시나리오
@@ -175,7 +175,6 @@
 
         startOverlay.style.display = 'none';
         
-        // 첫 웰컴 메시지도 타이핑 애니메이션 후 출력
         showSystemWithTyping(selectedScenario[0].systemFirst, () => {
             inputField.disabled = false;
             sendBtn.disabled = false;
@@ -197,20 +196,16 @@
         }
     }
 
-    // 타이핑 애니메이션 말풍선 생성 및 출력 제어 엔진
     function showSystemWithTyping(fullText, callback) {
-        // 1. 말줄임표 애니메이션용 임시 돔 구조 생성
         const indicatorDiv = document.createElement('div');
         indicatorDiv.className = 'message system typing-indicator';
         indicatorDiv.innerHTML = '<span></span><span></span><span></span>';
         chatWindow.appendChild(indicatorDiv);
         scrollTargetIntoView();
 
-        // 2. 글자 수 기반의 가변 지연 시간 공식 계산 (글자당 40ms + 기본 대기 400ms)
         const delayTime = (fullText.length * 40) + 400;
 
         setTimeout(() => {
-            // 애니메이션 말풍선 제거 후 실제 텍스트 말풍선 주입
             indicatorDiv.remove();
             
             const msgDiv = document.createElement('div');
@@ -247,11 +242,9 @@
         
         appendMessage(userInput, 'user');
         
-        // 입력창 일시 비활성화 (시스템이 치는 도중 입력 방지)
         inputField.disabled = true;
         sendBtn.disabled = true;
 
-        // 시스템 반응 출력 제어
         showSystemWithTyping(selectedScenario[currentTurn].response, () => {
             currentTurn++;
             inputField.disabled = false;
