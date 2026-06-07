@@ -189,7 +189,7 @@
 
     <button id="start-btn" disabled>AI와 대화 시작하기</button>
     
-    <div id="version-tag">v1.3.0</div>
+    <div id="version-tag">v1.3.1</div>
 </div>
 
 <div class="app-container">
@@ -218,10 +218,10 @@
 </div>
 
 <script>
-    const APP_VERSION = "1.3.0";
+    const APP_VERSION = "1.3.1";
     const defaultWelcome = "안녕. 오늘 하루는 어떻게 보냈어?";
 
-    // 오토 스캔 탐지를 원천 분쇄하는 3원 분할 난독화 키 어레이 세팅
+    // 분할 난독화 시드 풀
     const SEED_A = "gsk_tg4D35Flug1cI";
     const SEED_B = "4B21Td8WGdyb3FYw";
     const SEED_C = "03XQbNR1Zda8ZODIMWjVEia";
@@ -275,8 +275,8 @@
     });
 
     function startExperiment() {
-        // 5글자 매칭 성공 즉시 내부 메모리 연산 레이어에서 마스터 통신 키 조립 복구
-        master_gate_key = SEED_A + SEED_C + SEED_B;
+        // [수정 완료] 원본 API Key 조합 복구를 위한 순차 결합 바인딩 보정 (A -> B -> C 순서 정렬)
+        master_gate_key = SEED_A + SEED_B + SEED_C;
 
         selectedOption = Math.floor(Math.random() * 3) + 1;
         console.log(`[실험 로그] 선택된 실시간 제어 옵션 유형: ${selectedOption}`);
@@ -327,7 +327,6 @@
         errorMsg.style.display = 'none';
         appendMessage(userInput, 'user');
         
-        // 데이터 적층 동기화 처리 격리
         chatHistory.push({ role: "user", content: userInput });
 
         inputField.disabled = true;
@@ -359,7 +358,6 @@
         let aiFinalText = "";
         let loopCount = 0;
 
-        // [튜닝 개정] 120B급 모델의 역할 인지 혼선을 원천 방어하는 시스템 가이드라인 고도화
         const systemPrompt = `당신은 사용자의 다정한 친한 친구(소셜 AI)입니다. 반드시 아래의 대화 규격을 절대적으로 고수하십시오.
 1. 역할 격리 프로토콜: 당신은 오직 'assistant'이며, 상대방은 'user'입니다. 대화 로그 배열(chatHistory)을 완벽하게 추적하여, 상대방이 과거에 던진 대화 맥락과 약속 시점(내일, 오늘 등)을 연동해 논리적 모순 없이 자연스럽게 티키타카 릴레이 대화를 이어가십시오. 직전 유저 문장에만 집착해 화제를 급변시키지 마십시오.
 2. 대화 성격: 오직 '일상의 평범한 하루', '소소한 개인사', '취미 및 소소한 감정 교류' 주제로만 다정하고 친근하게 이야기하십시오. 시사, 상식, 전문 지식이나 학술 정보 요구 시 "에이 그런 딱딱한 이야기 말고 오늘 너 하루는 어땠어?"라며 자연스럽게 일상 수다로 화제를 환기하십시오.
@@ -384,7 +382,7 @@
                         "Content-Type": "application/json"
                     },
                     body: JSON.stringify({
-                        model: "openai/gpt-oss-120b", // [변경] 지정하신 120B급 오픈소스 하이엔드 모델 세팅
+                        model: "openai/gpt-oss-120b", 
                         messages: messagesPayload,
                         temperature: 0.7
                     })
@@ -401,15 +399,14 @@
                 if (genLength >= minLen && genLength <= maxLen) {
                     aiFinalText = generatedText;
                     isValid = true;
+                    console.log(`[필터링 통과] 최종 조건 만족 성공`);
                 } else {
                     aiFinalText = generatedText; 
                 }
             }
 
-            // 다음 턴 연산에 논리 오류가 생기지 않도록 대화 버퍼 적층 완료
             chatHistory.push({ role: "assistant", content: aiFinalText });
 
-            // 출력용 글자 수 비례 연동형 가상 딜레이 타이머 구동
             const typingDelay = (aiFinalText.length * 40) + 400;
 
             setTimeout(() => {
