@@ -169,7 +169,7 @@
 
     <button id="start-btn" disabled>AI와 대화 시작하기</button>
     
-    <div id="version-tag">v1.0.0</div>
+    <div id="version-tag">v1.0.1</div>
 </div>
 
 <div class="app-container">
@@ -198,10 +198,8 @@
 </div>
 
 <script>
-    const APP_VERSION = "1.0.0";
+    const APP_VERSION = "1.0.1";
     const defaultWelcome = "안녕. 오늘 하루는 어떻게 보냈어?";
-
-    // [변경] 내장형 Groq API Key 보안 노출 감수 조건부 하드코딩 반영
     const GROQ_API_KEY = "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";
 
     const MAX_TURNS = 10;
@@ -225,7 +223,8 @@
 
     versionTag.innerText = `v${APP_VERSION}`;
 
-    agreeCheck.addEventListener('change', (e) => {
+    // [보정] 모바일 환경에서 가장 반응성이 즉각적인 click 상호작용으로 제어문 변경
+    agreeCheck.addEventListener('click', (e) => {
         startBtn.disabled = !e.target.checked;
     });
 
@@ -361,4 +360,35 @@
 
                 console.log(`[백스테이지 분석] 생성된 텍스트 수치: ${genLength}자 -> "${generatedText}"`);
 
-                if (genLength >= min
+                if (genLength >= minLen && genLength <= maxLen) {
+                    aiFinalText = generatedText;
+                    isValid = true;
+                    console.log(`[필터링 통과] 최종 조건 만족 성공`);
+                } else {
+                    aiFinalText = generatedText; 
+                }
+            }
+
+            indicatorDiv.remove();
+            appendMessage(aiFinalText, 'system');
+            chatHistory.push({ role: "assistant", content: aiFinalText });
+            
+            currentTurn++;
+            updateGuide();
+
+        } catch (err) {
+            console.error(err);
+            indicatorDiv.remove();
+            errorMsg.style.display = 'block';
+            updateGuide();
+        }
+    }
+
+    startBtn.addEventListener('click', startExperiment);
+    sendBtn.addEventListener('click', handleSend);
+    inputField.addEventListener('keypress', (e) => { if(e.key === 'Enter' && !inputField.disabled) handleSend(); });
+    inputField.addEventListener('focus', scrollTargetIntoView);
+</script>
+
+</body>
+</html>
