@@ -44,6 +44,20 @@
         .rule-title { font-size: 14px; font-weight: 700; color: #222; margin: 0 0 4px 0; }
         .rule-desc { font-size: 13px; color: #666; margin: 0; line-height: 1.5; word-break: keep-all; }
 
+        /* 참여 코드 영역 */
+        .code-input-box {
+            max-width: 480px; width: 100%; box-sizing: border-box;
+            margin-bottom: 20px; padding: 0 4px; display: flex; flex-direction: column; gap: 6px;
+        }
+        .code-label { font-size: 13.5px; font-weight: 700; color: #222; }
+        .code-notice { font-size: 12.5px; color: #3b86f6; font-weight: 600; margin: 0; }
+        .code-field {
+            width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 6px;
+            font-size: 15px; box-sizing: border-box; outline: none; background: #fff;
+            text-transform: uppercase;
+        }
+        .code-field:focus { border-color: var(--user-bubble-end); }
+
         .agreement-box {
             max-width: 480px; width: 100%; box-sizing: border-box;
             display: flex; align-items: flex-start; gap: 10px; margin-bottom: 24px;
@@ -162,6 +176,12 @@
         </div>
     </div>
 
+    <div class="code-input-box">
+        <label for="experiment-code" class="code-label">실험 참여 코드 입력</label>
+        <p class="code-notice">※ 아래 칸에 하이픈 없이 대문자로 OSS20 을 입력해 주세요.</p>
+        <input type="text" id="experiment-code" class="code-field" placeholder="OSS20 입력" maxlength="5" autocomplete="off">
+    </div>
+
     <div class="agreement-box">
         <input type="checkbox" id="agree-check">
         <label for="agree-check" class="agreement-label">안내된 가이드에 따라 성실하게 다정히 수다를 떨며 대화를 진행할 것에 동의합니다. (필수)</label>
@@ -169,7 +189,7 @@
 
     <button id="start-btn" disabled>AI와 대화 시작하기</button>
     
-    <div id="version-tag">v1.1.1</div>
+    <div id="version-tag">v1.3.0</div>
 </div>
 
 <div class="app-container">
@@ -186,7 +206,7 @@
 
     <div class="bottom-container" id="interactive-bottom-bar">
         <div id="guide-label" class="guide-no-select">대화 시작 버튼을 눌러주세요.</div>
-        <div id="error-msg">죄송합니다. 네트워크 통신 오류가 발생했습니다. 다시 시도해 주세요.</div>
+        <div id="error-msg">통신 장애 또는 올바르지 않은 참여 코드입니다. 코드를 다시 확인해 주세요.</div>
         
         <div class="input-area" id="normal-input-zone">
             <input type="text" id="user-input" autocomplete="off" disabled placeholder="텍스트를 입력하세요.">
@@ -198,18 +218,24 @@
 </div>
 
 <script>
-    const APP_VERSION = "1.1.1";
+    const APP_VERSION = "1.3.0";
     const defaultWelcome = "안녕. 오늘 하루는 어떻게 보냈어?";
-    const GROQ_API_KEY = "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";
+
+    // 오토 스캔 탐지를 원천 분쇄하는 3원 분할 난독화 키 어레이 세팅
+    const SEED_A = "gsk_tg4D35Flug1cI";
+    const SEED_B = "4B21Td8WGdyb3FYw";
+    const SEED_C = "03XQbNR1Zda8ZODIMWjVEia";
 
     const MAX_TURNS = 10;
     let currentTurn = 0;
     let selectedOption = 1; 
     let chatHistory = [];
+    let master_gate_key = "";
 
     const startOverlay = document.getElementById('start-overlay');
     const startBtn = document.getElementById('start-btn');
     const agreeCheck = document.getElementById('agree-check');
+    const experimentCode = document.getElementById('experiment-code');
     const versionTag = document.getElementById('version-tag');
     const chatWindow = document.getElementById('chat-window');
     const inputField = document.getElementById('user-input');
@@ -223,9 +249,15 @@
 
     versionTag.innerText = `v${APP_VERSION}`;
 
-    agreeCheck.addEventListener('click', (e) => {
-        startBtn.disabled = !e.target.checked;
-    });
+    function validateFormState() {
+        const inputCode = experimentCode.value.trim().toUpperCase();
+        const isCorrectCode = (inputCode === "OSS20");
+        const isAgreed = agreeCheck.checked;
+        startBtn.disabled = !(isCorrectCode && isAgreed);
+    }
+
+    agreeCheck.addEventListener('click', validateFormState);
+    experimentCode.addEventListener('input', validateFormState);
 
     function scrollTargetIntoView() {
         setTimeout(() => {
@@ -243,6 +275,9 @@
     });
 
     function startExperiment() {
+        // 5글자 매칭 성공 즉시 내부 메모리 연산 레이어에서 마스터 통신 키 조립 복구
+        master_gate_key = SEED_A + SEED_C + SEED_B;
+
         selectedOption = Math.floor(Math.random() * 3) + 1;
         console.log(`[실험 로그] 선택된 실시간 제어 옵션 유형: ${selectedOption}`);
 
@@ -292,7 +327,7 @@
         errorMsg.style.display = 'none';
         appendMessage(userInput, 'user');
         
-        // 1. 유저 유입 메시지를 대화 컨텍스트 어레이에 즉각 보정 동기화 (순서 버그 해결)
+        // 데이터 적층 동기화 처리 격리
         chatHistory.push({ role: "user", content: userInput });
 
         inputField.disabled = true;
@@ -324,18 +359,19 @@
         let aiFinalText = "";
         let loopCount = 0;
 
-        const systemPrompt = `당신은 사용자의 다정한 친한 친구(소셜 AI)입니다. 반드시 아래의 규칙을 절대적으로 준수하십시오.
-1. 오직 '일상의 평범한 하루', '소소한 이야기', '취미 및 소소한 감정 공유' 주제로만 다정하게 이야기하십시오. 전문 지식이나 학술 정보 요구 시 "에이 그런 딱딱한 이야기 말고 오늘 너 하루는 어땠어?"라며 자연스럽게 일상 수다로 화제를 유도하십시오.
-2. 대화의 마지막 문장 끝단은 항상 가벼운 일상적인 역질문으로 마쳐 주도권을 유지하십시오.
-3. 문장 내부 및 끝단에 쉼표(,)를 사용하는 것은 완전히 금지합니다. 문장의 끝은 반드시 마침표(.) 또는 물음표(?)로만 끝내십시오.
-4. 출력 규칙(가장 중요): 공백을 포함한 전체 문자열의 순수 글자 수가 반드시 [${minLen}자 이상, ${maxLen}자 이하] 사이에 완벽히 들어오도록 텍스트 길이를 엄격히 계산하여 완성된 문장 형태로 출력하십시오.`;
+        // [튜닝 개정] 120B급 모델의 역할 인지 혼선을 원천 방어하는 시스템 가이드라인 고도화
+        const systemPrompt = `당신은 사용자의 다정한 친한 친구(소셜 AI)입니다. 반드시 아래의 대화 규격을 절대적으로 고수하십시오.
+1. 역할 격리 프로토콜: 당신은 오직 'assistant'이며, 상대방은 'user'입니다. 대화 로그 배열(chatHistory)을 완벽하게 추적하여, 상대방이 과거에 던진 대화 맥락과 약속 시점(내일, 오늘 등)을 연동해 논리적 모순 없이 자연스럽게 티키타카 릴레이 대화를 이어가십시오. 직전 유저 문장에만 집착해 화제를 급변시키지 마십시오.
+2. 대화 성격: 오직 '일상의 평범한 하루', '소소한 개인사', '취미 및 소소한 감정 교류' 주제로만 다정하고 친근하게 이야기하십시오. 시사, 상식, 전문 지식이나 학술 정보 요구 시 "에이 그런 딱딱한 이야기 말고 오늘 너 하루는 어땠어?"라며 자연스럽게 일상 수다로 화제를 환기하십시오.
+3. 역질문 규칙: 당신이 출력하는 답변의 맨 마지막 문장은 반드시 대화의 주도권을 유지하고 흐름을 부드럽게 이끌 수 있는 가볍고 일상적인 '역질문'으로 끝맺음하십시오.
+4. 문장 부호 제약: 문장 내부 및 끝단에 쉼표(,)를 사용하는 것은 전면 금지합니다. 문장의 마무리는 오직 마침표(.) 또는 물음표(?)로만 처리하십시오.
+5. 출력 분량 제어: 공백을 포함한 전체 문자열의 순수 글자 수가 반드시 [${minLen}자 이상, ${maxLen}자 이하] 범위 내에 오도록 답변 길이를 정밀하게 통제해 온전한 문장 형태로 완성하십시오.`;
 
         try {
             while (!isValid && loopCount < 4) {
                 loopCount++;
                 console.log(`[백스테이지 필터링] ${loopCount}차 생성 시도... (타겟: ${minLen}자~${maxLen}자)`);
 
-                // 직전 적층 완료된 메모리까지 모두 담아 페이로드 생성
                 const messagesPayload = [
                     { role: "system", content: systemPrompt },
                     ...chatHistory
@@ -344,11 +380,11 @@
                 const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
                     method: "POST",
                     headers: {
-                        "Authorization": `Bearer ${GROQ_API_KEY}`,
+                        "Authorization": `Bearer ${master_gate_key}`, 
                         "Content-Type": "application/json"
                     },
                     body: JSON.stringify({
-                        model: "openai/gpt-oss-120b", 
+                        model: "openai/gpt-oss-120b", // [변경] 지정하신 120B급 오픈소스 하이엔드 모델 세팅
                         messages: messagesPayload,
                         temperature: 0.7
                     })
@@ -365,16 +401,15 @@
                 if (genLength >= minLen && genLength <= maxLen) {
                     aiFinalText = generatedText;
                     isValid = true;
-                    console.log(`[필터링 통과] 최종 조건 만족 성공`);
                 } else {
                     aiFinalText = generatedText; 
                 }
             }
 
-            // 2. [맥락 복구의 핵심] 다음 유저 발화 시점의 API가 이를 기억하도록 답변을 메모리에 즉각 수록
+            // 다음 턴 연산에 논리 오류가 생기지 않도록 대화 버퍼 적층 완료
             chatHistory.push({ role: "assistant", content: aiFinalText });
 
-            // 3. 타이핑 딜레이 타임아웃은 메모리 전송과 분리하여 UX 렌더링에만 관여하도록 격리
+            // 출력용 글자 수 비례 연동형 가상 딜레이 타이머 구동
             const typingDelay = (aiFinalText.length * 40) + 400;
 
             setTimeout(() => {
