@@ -44,16 +44,36 @@
         .rule-title { font-size: 14px; font-weight: 700; color: #222; margin: 0 0 4px 0; }
         .rule-desc { font-size: 13px; color: #666; margin: 0; line-height: 1.5; word-break: keep-all; }
 
-        /* 참여 코드 영역 */
+        /* 참여 코드 입력 제어 영역 크로스오버 */
         .code-input-box {
             max-width: 480px; width: 100%; box-sizing: border-box;
             margin-bottom: 20px; padding: 0 4px; display: flex; flex-direction: column; gap: 6px;
         }
         .code-label { font-size: 13.5px; font-weight: 700; color: #222; }
         .code-notice { font-size: 12.5px; color: #3b86f6; font-weight: 600; margin: 0; }
+        
+        /* [보완] 상시 고정 가이드 텍스트 노출용 컨테이너 및 힌트 폰트 레이어 */
+        .code-input-relative {
+            position: relative;
+            width: 100%;
+        }
+        .code-bg-hint {
+            position: absolute;
+            left: 13px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: rgba(0,0,0,0.15);
+            font-size: 15px;
+            font-family: monospace;
+            pointer-events: none;
+            user-select: none;
+            z-index: 1;
+        }
         .code-field {
             width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 6px;
-            font-size: 15px; box-sizing: border-box; outline: none; background: #fff;
+            font-size: 15px; font-family: monospace; box-sizing: border-box; outline: none; 
+            background: transparent; /* 투명화 처리로 백그라운드 힌트 항시 투과 */
+            position: relative; z-index: 2;
         }
         .code-field:focus { border-color: var(--user-bubble-end); }
 
@@ -108,7 +128,9 @@
         /* 말풍선 공통 스타일 */
         .message { max-width: 66.6%; padding: 11px 16px; border-radius: 18px; font-size: 14.5px; line-height: 1.45; position: relative; box-shadow: 0 1px 2px rgba(0,0,0,0.03); word-break: break-all; }
         .system { align-self: flex-start; background: var(--system-bubble); color: var(--system-text); border-bottom-left-radius: 2px; }
-        .user { align-self: flex-end; background: linear-gradient(135deg, var(--user-bubble-start), var(--user-bubble-end)); color: var(--user-text); border-bottom-right-radius: 2px; }
+        
+        /* [변경] 사용자의 대화 기록 출력 말풍선 내 텍스트 볼드(Bold) 적용 */
+        .user { align-self: flex-end; background: linear-gradient(135deg, var(--user-bubble-start), var(--user-bubble-end)); color: var(--user-text); border-bottom-right-radius: 2px; font-weight: bold; }
 
         /* 타이핑 인디케이터 */
         .typing-indicator { display: flex; gap: 4px; padding: 14px 22px; align-items: center; }
@@ -132,10 +154,12 @@
         
         .input-area { display: flex; gap: 8px; }
         
+        /* [변경] 사용자가 타이핑 중인 입력 필드 내부 텍스트 폰트 볼드(Bold) 일괄 매칭 */
         input { 
             flex: 1; padding: 12px; border: 1px solid #e0e0e0; border-radius: 8px; outline: none; font-size: 16px; 
             background: #fafafa; -webkit-appearance: none; box-sizing: border-box;
             user-select: text !important; -webkit-user-select: text !important;
+            font-weight: bold;
         }
         input:focus { border-color: var(--user-bubble-end); background: #fff; }
         
@@ -178,7 +202,12 @@
     <div class="code-input-box">
         <label for="experiment-code" class="code-label">실험 참여 코드 입력</label>
         <p class="code-notice">※ 아래 칸에 대소문자를 정확히 구분하여 EupY6 을 입력해 주세요.</p>
-        <input type="text" id="experiment-code" class="code-field" placeholder="EupY6 입력" maxlength="5" autocomplete="off">
+        
+        <!-- [개정] 인풋 백그라운드 레이어링을 활용한 고정 힌트 텍스트 매커니즘 수록 -->
+        <div class="code-input-relative">
+            <span class="code-bg-hint">EupY6</span>
+            <input type="text" id="experiment-code" class="code-field" maxlength="5" autocomplete="off">
+        </div>
     </div>
 
     <div class="agreement-box">
@@ -188,7 +217,7 @@
 
     <button id="start-btn" disabled>AI와 대화 시작하기</button>
     
-    <div id="version-tag">v1.6.3</div>
+    <div id="version-tag">v1.6.4</div>
 </div>
 
 <div class="app-container">
@@ -204,7 +233,6 @@
     <div id="chat-window"></div>
 
     <div class="bottom-container" id="interactive-bottom-bar">
-        <!-- [변경] 글자 수 카운팅 연동을 위해 레이블의 초기 상태 설정 -->
         <div id="guide-label" class="guide-no-select">대화 시작 버튼을 눌러주세요.</div>
         <div id="error-msg">통신 장애가 발생했거나 순간적인 요청이 많습니다. 잠시 후 다시 전송해 주세요.</div>
         
@@ -218,7 +246,7 @@
 </div>
 
 <script>
-    const APP_VERSION = "1.6.3";
+    const APP_VERSION = "1.6.4";
     const defaultWelcome = "안녕. 오늘 하루는 어떻게 보냈어?";
 
     const SEED_A = "gsk_ktKbZePw7IlkBnJs8s5wWGdyb3FY";
@@ -272,35 +300,37 @@
         }
     });
 
-    // [추가] 유저가 입력창에 타이핑할 때 상단 레이블에 실시간 글자 수를 업데이트하는 리스너
     inputField.addEventListener('input', () => {
         if (!inputField.disabled) {
             guideLabel.innerText = `현재 입력 글자 수: ${inputField.value.length}자 (${currentTurn}/${MAX_TURNS} 턴)`;
         }
     });
 
+    // [보완 핵심] 모바일 렌더링 스레드 지연 및 차단 결함을 원천 해결하는 설계 패턴
     function startExperiment() {
-        master_gate_key = SEED_A + experimentCode.value.trim() + SEED_B;
+        // 어떠한 런타임 논리 예외나 초기화 연산 병목이 생기더라도 진입 차단막(Overlay)을 즉시 소멸 처리
+        startOverlay.style.setProperty('display', 'none', 'important');
 
-        selectedOption = Math.floor(Math.random() * 3) + 1;
-        console.log(`[실험 로그] 선택된 실시간 제어 옵션 유형: ${selectedOption}`);
+        try {
+            master_gate_key = SEED_A + experimentCode.value.trim() + SEED_B;
+            selectedOption = Math.floor(Math.random() * 3) + 1;
+            console.log(`[실험 로그] 선택된 실시간 제어 옵션 유형: ${selectedOption}`);
+            
+            inputField.disabled = false;
+            sendBtn.disabled = false;
+            
+            guideLabel.innerText = `현재 입력 글자 수: 0자 (${currentTurn}/${MAX_TURNS} 턴)`;
+            inputField.focus();
 
-        startOverlay.style.display = 'none';
-        
-        inputField.disabled = false;
-        sendBtn.disabled = false;
-        
-        // 시작 시 실시간 글자 수 레이블 포맷 적용
-        guideLabel.innerText = `현재 입력 글자 수: 0자 (${currentTurn}/${MAX_TURNS} 턴)`;
-        inputField.focus();
-
-        appendMessage(defaultWelcome, 'system');
-        chatHistory.push({ role: "assistant", content: defaultWelcome });
+            appendMessage(defaultWelcome, 'system');
+            chatHistory.push({ role: "assistant", content: defaultWelcome });
+        } catch (err) {
+            console.error("초기화 프로세스 내 예외 핸들링 보정:", err);
+        }
     }
 
     function updateGuide() {
         if (currentTurn < MAX_TURNS) {
-            // [변경] 고정 안내문 대신 현재 글자 수 상태 포맷으로 레이블 초기화
             guideLabel.innerText = `현재 입력 글자 수: 0자 (${currentTurn}/${MAX_TURNS} 턴)`;
             inputField.value = "";
             inputField.disabled = false;
@@ -383,7 +413,6 @@
 
         try {
             while (!isValid && loopCount < 4) {
-                // [429 에러 해결] 백스테이지 재시도 가동 시 버스트 연사를 방지하기 위한 750ms 휴지기(Delay) 강제 주입
                 if (loopCount > 0) {
                     await new Promise(resolve => setTimeout(resolve, 750));
                 }
@@ -440,12 +469,16 @@
         } catch (err) {
             console.error(err);
             indicatorDiv.remove();
-            // [변경] 대화 도중 발생한 예외 상황 문구를 상황에 맞게 유연하게 전환 처리
             errorMsg.innerText = "통신 장애가 발생했거나 순간적인 요청이 많습니다. 잠시 후 다시 전송해 주세요.";
             errorMsg.style.display = 'block';
             updateGuide();
         }
     }
+
+    startBtn.addEventListener('click', startExperiment);
+    sendBtn.addEventListener('click', handleSend);
+    inputField.addEventListener('keypress', (e) => { if(e.key === 'Enter' && !inputField.disabled) handleSend(); });
+    inputField.addEventListener('focus', scrollTargetIntoView);
 </script>
 
 </body>
