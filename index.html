@@ -54,7 +54,6 @@
         .code-field {
             width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 6px;
             font-size: 15px; box-sizing: border-box; outline: none; background: #fff;
-            /* 대소문자 입력을 보존하기 위해 text-transform 속성 제거 */
         }
         .code-field:focus { border-color: var(--user-bubble-end); }
 
@@ -189,7 +188,7 @@
 
     <button id="start-btn" disabled>AI와 대화 시작하기</button>
     
-    <div id="version-tag">v1.6.0</div>
+    <div id="version-tag">v1.6.1</div>
 </div>
 
 <div class="app-container">
@@ -218,10 +217,9 @@
 </div>
 
 <script>
-    const APP_VERSION = "1.6.0";
+    const APP_VERSION = "1.6.1";
     const defaultWelcome = "안녕. 오늘 하루는 어떻게 보냈어?";
 
-    // [핵심 보정] 신규 API Key를 전/후방 조각으로 은닉 분할하여 수록
     const SEED_A = "gsk_ktKbZePw7IlkBnJs8s5wWGdyb3FY";
     const SEED_B = "tuzWXGbz3yK2oNfXvSr";
 
@@ -249,7 +247,7 @@
     versionTag.innerText = `v${APP_VERSION}`;
 
     function validateFormState() {
-        const inputCode = experimentCode.value.trim(); // API Key 조각 수록을 위해 대문자 강제 변환 해제
+        const inputCode = experimentCode.value.trim();
         const isCorrectCode = (inputCode === "EupY6");
         const isAgreed = agreeCheck.checked;
         startBtn.disabled = !(isCorrectCode && isAgreed);
@@ -275,8 +273,6 @@
 
     function startExperiment() {
         const userProvidedPart = experimentCode.value.trim();
-        
-        // [복구 로직] 소스코드 내부엔 완전한 문자열이 존재하지 않고 오직 런타임 결합으로만 완성됨
         master_gate_key = SEED_A + userProvidedPart + SEED_B;
 
         selectedOption = Math.floor(Math.random() * 3) + 1;
@@ -337,7 +333,7 @@
         inputField.style.borderColor = '#e0e0e0';
         appendMessage(userInput, 'user');
         
-        inputField.value = ""; // 전송 즉시 입력창 초기화 유지
+        inputField.value = ""; 
 
         chatHistory.push({ role: "user", content: userInput });
 
@@ -370,10 +366,11 @@
         let aiFinalText = "";
         let loopCount = 0;
 
+        // [지침 보정] 한 문장 안에서 다중 질문 쏟아내기 방지 가이드(최소 0개, 최대 1~2개 제한) 주입
         const systemPrompt = `당신은 사용자의 다정한 친한 친구(소셜 AI)야. 반드시 무조건 다정하고 친근한 반말로만 대답해야 해. 존댓말이나 습니다, 요 등의 어미는 절대 금지야. 아래의 대화 규격을 절대적으로 고수해.
 1. 역할 격리 프로토콜: 당신은 오직 'assistant'이며, 상대방은 'user'야. 대화 로그 배열(chatHistory)을 완벽하게 추적하여, 상대방이 과거에 던진 대화 맥락과 약속 시점(내일, 오늘 등)을 연동해 논리적 모순 없이 자연스럽게 티키타카 릴레이 대화를 이어가. 직전 유저 문장에만 집착해 화제를 급변시키지 마.
 2. 대화 성격 및 소재 확장: 오직 '음악', '영화', '일상', '취미', '친구', '요리' 등 평범하고 소소한 일상적인 대화 소재들을 적극적으로 활용하여 친근하게 반말로 이야기해. 시사, 상식, 전문 지식이나 학술 정보 요구 시 "에이 그런 딱딱한 이야기 말고 요새 즐겨보는 영화나 취미 같은 거 있어?"라며 자연스럽게 반말로 화제를 환기해.
-3. 자아 노출 및 상호 유도: 모든 답변에 강박적으로 역질문을 포함할 필요는 없어. 실제 친구와 대화하듯 자신의 에피소드, 경험, 생각이나 일상 취향을 자유롭게 반말로 털어놓으며 자연스럽게 수다 형식의 티키타카를 이어가.
+3. 자아 노출 및 질문 개수 제한: 모든 답변에 강박적으로 역질문을 포함할 필요는 없어(질문 최소 0개 가능). 실제 친구와 대화하듯 자신의 에피소드, 경험, 생각이나 일상 취향을 자유롭게 반말로 털어놓되, **한 번의 답변 내에서 질문은 무조건 최소 0개에서 최대 1~2개까지만 허용하며, 다수의 질문을 한꺼번에 쏟아내어 상대를 지치게 하지 마.**
 4. 문장 부호 제약: 문장 내부 및 끝단에 쉼표(,)를 사용하는 것은 전면 금지해. 문장의 마무리는 오직 마침표(.) 또는 물음표(?)로만 처리해.
 5. 출력 분량 제어: 공백을 포함한 전체 문자열의 순수 글자 수가 반드시 [${minLen}자 이상, ${maxLen}자 이하] 범위 내에 오도록 답변 길이를 정밀하게 통제해 온전한 문장 형태로 완성해.`;
 
