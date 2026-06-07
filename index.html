@@ -169,7 +169,7 @@
 
     <button id="start-btn" disabled>AI와 대화 시작하기</button>
     
-    <div id="version-tag">v1.1.0</div>
+    <div id="version-tag">v1.1.1</div>
 </div>
 
 <div class="app-container">
@@ -198,7 +198,7 @@
 </div>
 
 <script>
-    const APP_VERSION = "1.1.0";
+    const APP_VERSION = "1.1.1";
     const defaultWelcome = "안녕. 오늘 하루는 어떻게 보냈어?";
     const GROQ_API_KEY = "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";
 
@@ -291,13 +291,14 @@
 
         errorMsg.style.display = 'none';
         appendMessage(userInput, 'user');
+        
+        // 1. 유저 유입 메시지를 대화 컨텍스트 어레이에 즉각 보정 동기화 (순서 버그 해결)
         chatHistory.push({ role: "user", content: userInput });
 
         inputField.disabled = true;
         sendBtn.disabled = true;
         guideLabel.innerText = "상대방이 입력중입니다.";
 
-        // 타이핑 가상 점 애니메이션 노출 시작
         const indicatorDiv = document.createElement('div');
         indicatorDiv.className = 'message system typing-indicator';
         indicatorDiv.innerHTML = '<span></span><span></span><span></span>';
@@ -330,11 +331,11 @@
 4. 출력 규칙(가장 중요): 공백을 포함한 전체 문자열의 순수 글자 수가 반드시 [${minLen}자 이상, ${maxLen}자 이하] 사이에 완벽히 들어오도록 텍스트 길이를 엄격히 계산하여 완성된 문장 형태로 출력하십시오.`;
 
         try {
-            // [통신 페이즈] 백스테이지에서 API를 호출하여 필터링 조건 충족문 탐색
             while (!isValid && loopCount < 4) {
                 loopCount++;
                 console.log(`[백스테이지 필터링] ${loopCount}차 생성 시도... (타겟: ${minLen}자~${maxLen}자)`);
 
+                // 직전 적층 완료된 메모리까지 모두 담아 페이로드 생성
                 const messagesPayload = [
                     { role: "system", content: systemPrompt },
                     ...chatHistory
@@ -347,7 +348,7 @@
                         "Content-Type": "application/json"
                     },
                     body: JSON.stringify({
-                        model: "openai/gpt-oss-safeguard-20b", // [변경] 지정 모델 규격 전면 적용
+                        model: "openai/gpt-oss-safeguard-20b", 
                         messages: messagesPayload,
                         temperature: 0.7
                     })
@@ -370,15 +371,15 @@
                 }
             }
 
-            // [추가 및 연동] 최종 선별된 답변의 글자 수에 비례하여 인디케이터 유지 지연 시간 산출
-            // 글자당 40ms 할당 + 최소 기본 대기 시간 400ms 가산
+            // 2. [맥락 복구의 핵심] 다음 유저 발화 시점의 API가 이를 기억하도록 답변을 메모리에 즉각 수록
+            chatHistory.push({ role: "assistant", content: aiFinalText });
+
+            // 3. 타이핑 딜레이 타임아웃은 메모리 전송과 분리하여 UX 렌더링에만 관여하도록 격리
             const typingDelay = (aiFinalText.length * 40) + 400;
 
             setTimeout(() => {
-                // 가상 타이핑 시간이 경과한 후 애니메이션 레이어를 해제하고 문장 노출
                 indicatorDiv.remove();
                 appendMessage(aiFinalText, 'system');
-                chatHistory.push({ role: "assistant", content: aiFinalText });
                 
                 currentTurn++;
                 updateGuide();
