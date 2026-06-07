@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Text with AI</title>
+    <style>
+        :root {
+            --bg-color: #f8f9fa;
+            --system-bubble: #E9E8ED;
+            --system-text: #1a1a1a;
+            --user-bubble-start: #4f95ff;
+            --user-bubble-end: #3B86F6;
+            --user-text: #ffffff;
+            --guide-color: #a0a0a0;
+        }
+
+        html, body { 
+            margin: 0; padding: 0; width: 100%; height: 100%;
+            background: var(--bg-color); font-family: -apple-system, sans-serif; 
+            overflow: hidden;
+        }
+
+        .app-container { display: flex; flex-direction: column; width: 100%; height: 100%; box-sizing: border-box; }
+        
+        /* 시작 모달 영역 */
+        #start-overlay { 
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            background: #f8f9fa; display: flex; flex-direction: column; 
+            align-items: center; z-index: 999; box-sizing: border-box;
+            overflow-y: auto; padding: 40px 24px;
+        }
+        #start-msg { font-size: 22px; font-weight: 700; color: #1a1a1a; margin-bottom: 8px; text-align: center; }
+        .thanks-msg { font-size: 14px; color: #555; text-align: center; margin-bottom: 24px; line-height: 1.5; word-break: keep-all; }
+        
+        .guide-box {
+            background: #fff; border: 1px solid #e0e0e0; border-radius: 12px;
+            padding: 20px; max-width: 480px; width: 100%; box-sizing: border-box;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.03); margin-bottom: 24px;
+        }
+        .guide-title { font-size: 15px; font-weight: 700; color: #333; margin-top: 0; margin-bottom: 16px; border-bottom: 2px solid #3B86F6; padding-bottom: 6px; }
+        .rule-section { margin-bottom: 16px; }
+        .rule-section:last-child { margin-bottom: 0; }
+        .rule-title { font-size: 14px; font-weight: 700; color: #222; margin: 0 0 4px 0; }
+        .rule-desc { font-size: 13px; color: #666; margin: 0; line-height: 1.5; word-break: keep-all; }
+
+        /* 참여 코드 영역 (원래 스타일로 복구) */
+        .code-input-box {
+            max-width: 480px; width: 100%; box-sizing: border-box;
+            margin-bottom: 20px; padding: 0 4px; display: flex; flex-direction: column; gap: 6px;
+        }
+        .code-label { font-size: 13.5px; font-weight: 700; color: #222; }
+        .code-notice { font-size: 12.5px; color: #3b86f6; font-weight: 600; margin: 0; }
+        .code-field {
+            width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 6px;
+            font-size: 15px; font-family: monospace; box-sizing: border-box; outline: none; background: #fff;
+        }
+        .code-field:focus { border-color: var(--user-bubble-end); }
+
+        .agreement-box {
+            max-width: 480px; width: 100%; box-sizing: border-box;
+            display: flex; align-items: flex-start; gap: 10px; margin-bottom: 24px;
+            padding: 0 4px;
+        }
+
+        .agreement-box input[type="checkbox"] {
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            width: 20px; height: 20px; margin-top: 1px;
+            border: 2px solid #ccc; border-radius: 4px;
+            background-color: #fff; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            transition: all 0.15s ease-in-out;
+            flex-shrink: 0;
+        }
+        .agreement-box input[type="checkbox"]:checked {
+            background-color: var(--user-bubble-end);
+            border-color: var(--user-bubble-end);
+        }
+        .agreement-box input[type="checkbox"]:checked::before {
+            content: '✓';
+            color: #fff;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .agreement-label { font-size: 13.5px; color: #333; line-height: 1.4; font-weight: 600; cursor: pointer; user-select: none; word-break: keep-all; }
+
+        #start-btn { 
+            padding: 15px 40px; background: var(--user-bubble-end); color: #fff; 
+            border: none; border-radius: 8px; font-size: 16px; font-weight: bold; 
+            cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.06); width: 100%; max-width: 480px;
+        }
+        #start-btn:disabled { background: #e0e0e0; color: #a0a0a0; cursor: not-allowed; box-shadow: none; }
+        
+        #version-tag { margin-top: 40px; font-size: 12px; color: #999; font-family: monospace; }
+
+        /* 상단 고정 헤더 영역 */
+        .top-header { background: #fff; border-bottom: 1px solid #eaeaea; padding: 16px 20px; display: flex; flex-direction: column; align-items: center; text-align: center; box-sizing: border-box; width: 100%; }
+        .profile-icon { width: 54px; height: 54px; background: #e1e4e8; border-radius: 50%; display: flex; justify-content: center; align-items: center; margin-bottom: 10px; }
+        .profile-icon svg { width: 32px; height: 32px; fill: #959da5; }
+        .intro-text { font-size: 13.5px; color: #555; line-height: 1.5; margin: 0; font-weight: 400; word-break: keep-all; }
+
+        /* 채팅 창 영역 */
+        #chat-window { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 12px; -webkit-overflow-scrolling: touch; box-sizing: border-box; }
+
+        /* 말풍선 공통 스타일 */
+        .message { max-width: 66.6%; padding: 11px 16px; border-radius: 18px; font-size: 14.5px; line-height: 1.45; position: relative; box-shadow: 0 1px 2px rgba(0,0,0,0.03); word-break: break-all; }
+        .system { align-self: flex-start; background: var(--system-bubble); color: var(--system-text); border-bottom-left-radius: 2px; }
+        
+        /* 유저 말풍선 볼드체 제거 */
+        .user { align-self: flex-end; background: linear-gradient(135deg, var(--user-bubble-start), var(--user-bubble-end)); color: var(--user-text); border-bottom-right-radius: 2px; }
+
+        /* 타이핑 인디케이터 */
+        .typing-indicator { display: flex; gap: 4px; padding: 14px 22px; align-items: center; }
+        .typing-indicator span { width: 6px; height: 6px; background: #8e8e93; border-radius: 50%; display: inline-block; animation: bounce 1.4s infinite ease-in-out both; }
+        .typing-indicator span:nth-child(1) { animation-delay: -0.32s; }
+        .typing-indicator span:nth-child(2) { animation-delay: -0.16s; }
+
+        @keyframes bounce {
+            0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+            40% { transform: scale(1.2); opacity: 1; }
+        }
+
+        /* 하단 입력 영역 */
+        .bottom-container { background: #fff; border-top: 1px solid #eaeaea; padding: 12px 15px calc(12px + env(safe-area-inset-bottom)) 15px; display: flex; flex-direction: column; gap: 6px; box-sizing: border-box; width: 100%; }
+        
+        .guide-no-select { 
+            font-size: 13px; color: var(--guide-color); font-weight: 500; min-height: 18px; padding-left: 4px; 
+            user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;
+            pointer-events: none;
+        }
+        
+        .input-area { display: flex; gap: 8px; }
+        
+        /* 입력창 내부 텍스트 볼드체 제거 */
+        input { 
+            flex: 1; padding: 12px; border: 1px solid #e0e0e0; border-radius: 8px; outline: none; font-size: 16px; 
+            background: #fafafa; -webkit-appearance: none; box-sizing: border-box;
+            user-select: text !important; -webkit-user-select: text !important;
+        }
+        input:focus { border-color: var(--user-bubble-end); background: #fff; }
+        
+        button.send-btn { padding: 0 20px; background: var(--user-bubble-end); color: #fff; border: none; border-radius: 8px; font-size: 14.5px; font-weight: 600; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+        button.send-btn:disabled { background: #e0e0e0; color: #a0a0a0; }
+        #error-msg { color: #ff3b30; font-size: 12px; margin: 0; display: none; padding-left: 4px; }
+
+        .survey-btn {
+            width: 100%; padding: 14px; background: #222222; color: #ffffff;
+            border: none; border-radius: 8px; font-size: 15px; font-weight: 700;
+            text-align: center; text-decoration: none; cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05); box-sizing: border-box;
+            display: none; -webkit-tap-highlight-color: transparent;
+        }
+        .survey-btn:active { background: #000000; }
+    </style>
+</head>
+<body>
+
+<div id="start-overlay">
+    <p id="start-msg">AI와 대화를 나누어보세요.</p>
+    <p class="thanks-msg">본 연구 실험에 귀중한 시간을 내어 참여해 주셔서 진심으로 감사드립니다.</p>
+    
+    <div class="guide-box">
+        <p class="guide-title">대화 진행 가이드</p>
+        <div class="rule-section">
+            <p class="rule-title">일상적인 대화 편안하게 나누기</p>
+            <p class="rule-desc">본 대화는 정해진 시나리오가 없는 자유 대화입니다. 인공지능과 '일상의 평범한 하루'에 대한 소소한 이야기를 친구와 이야기하듯 자연스럽게 나누어 주세요.</p>
+        </div>
+        <div class="rule-section">
+            <p class="rule-title">대화의 흐름과 텍스트에 집중하기</p>
+            <p class="rule-desc">소셜 AI와의 원활한 소통을 위해 상대방의 답변 내용을 차분히 읽으면서 실제 대화 흐름에 부드럽게 몰입해 주시기 바랍니다.</p>
+        </div>
+        <div class="rule-section">
+            <p class="rule-title">총 10턴 대화 진행 및 완료 확인</p>
+            <p class="rule-desc">대화는 총 10턴(본인 입력 기준 10회) 동안 이어집니다. 중간에 창을 닫거나 새로고침하지 마십시오. 모든 대화가 끝나면 하단에 설문조사 참여 버튼이 활성화됩니다.</p>
+        </div>
+    </div>
+
+    <div class="code-input-box">
+        <label for="experiment-code" class="code-label">실험 참여 코드 입력</label>
+        <p class="code-notice">※ 아래 칸에 대소문자를 정확히 구분하여 EupY6 을 입력해 주세요.</p>
+        <input type="text" id="experiment-code" class="code-field" placeholder="EupY6 입력" maxlength="5" autocomplete="off">
+    </div>
+
+    <div class="agreement-box">
+        <input type="checkbox" id="agree-check">
+        <label for="agree-check" class="agreement-label">안내된 가이드에 따라 성실하게 다정히 수다를 떨며 대화를 진행할 것에 동의합니다. (필수)</label>
+    </div>
+
+    <button id="start-btn" disabled>AI와 대화 시작하기</button>
+    
+    <div id="version-tag">v1.6.5</div>
+</div>
+
+<div class="app-container">
+    <div class="top-header">
+        <div class="profile-icon">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5-4-8-4z"/>
+            </svg>
+        </div>
+        <p class="intro-text">본 대화는 인공지능 시스템의 반응성 측정을 위한 실험 시나리오입니다.<br>하단 입력창을 이용해 편안하게 대화를 진행해 주세요.</p>
+    </div>
+
+    <div id="chat-window"></div>
+
+    <div class="bottom-container" id="interactive-bottom-bar">
+        <div id="guide-label" class="guide-no-select">대화 시작 버튼을 눌러주세요.</div>
+        <div id="error-msg">통신 장애가 발생했거나 순간적인 요청이 많습니다. 잠시 후 다시 전송해 주세요.</div>
+        
+        <div class="input-area" id="normal-input-zone">
+            <input type="text" id="user-input" autocomplete="off" disabled placeholder="텍스트를 입력하세요.">
+            <button id="send-btn" class="send-btn" disabled>전송</button>
+        </div>
+
+        <a href="https://forms.gle/XcPpby1vM4paT8xC6" target="_self" id="survey-link-btn" class="survey-btn">경험 평가 설문 페이지로 이동하기</a>
+    </div>
+</div>
+
+<script {nonce}>
+    const APP_VERSION = "1.6.5";
+    const defaultWelcome = "안녕. 오늘 하루는 어떻게 보냈어?";
+
+    const SEED_A = "gsk_ktKbZePw7IlkBnJs8s5wWGdyb3FY";
+    const SEED_B = "tuzWXGbz3yK2oNfXvSr";
+
+    const MAX_TURNS = 10;
+    let currentTurn = 0;
+    let selectedOption = 1; 
+    let chatHistory = [];
+    let master_gate_key = "";
+
+    const startOverlay = document.getElementById('start-overlay');
+    const startBtn = document.getElementById('start-btn');
+    const agreeCheck = document.getElementById('agree-check');
+    const experimentCode = document.getElementById('experiment-code');
+    const versionTag = document.getElementById('version-tag');
+    const chatWindow = document.getElementById('chat-window');
+    const inputField = document.getElementById('user-input');
+    const sendBtn = document.getElementById('send-btn');
+    const errorMsg = document.getElementById('error-msg');
+    const guideLabel = document.getElementById('guide-label');
+    const bottomBar = document.getElementById('interactive-bottom-bar');
+    
+    const normalInputZone = document.getElementById('normal-input-zone');
+    const surveyLinkBtn = document.getElementById('survey-link-btn');
+
+    versionTag.innerText = `v${APP_VERSION}`;
+
+    function validateFormState() {
+        const inputCode = experimentCode.value.trim();
+        const isCorrectCode = (inputCode === "EupY6");
+        const isAgreed = agreeCheck.checked;
+        startBtn.disabled = !(isCorrectCode && isAgreed);
+    }
+
+    agreeCheck.addEventListener('click', validateFormState);
+    experimentCode.addEventListener('input', validateFormState);
+
+    function scrollTargetIntoView() {
+        setTimeout(() => {
+            const lastMessage = chatWindow.lastElementChild;
+            if (lastMessage) {
+                lastMessage.scrollIntoView({ behavior: 'smooth', block: 'end' });
+            }
+        }, 100);
+    }
+
+    bottomBar.addEventListener('click', (e) => {
+        if (!inputField.disabled && document.activeElement !== inputField) {
+            inputField.focus();
+        }
+    });
+
+    inputField.addEventListener('input', () => {
+        if (!inputField.disabled) {
+            guideLabel.innerText = `현재 입력 글자 수: ${inputField.value.length}자 (${currentTurn}/${MAX_TURNS} 턴)`;
+        }
+    });
+
+    function startExperiment() {
+        // [유지] 대화 시작 버튼 클릭 시 레이어 즉시 소멸 전환 보정 로직
+        startOverlay.style.setProperty('display', 'none', 'important');
+
+        try {
+            master_gate_key = SEED_A + experimentCode.value.trim() + SEED_B;
+            selectedOption = Math.floor(Math.random() * 3) + 1;
+            console.log(`[실험 로그] 선택된 실시간 제어 옵션 유형: ${selectedOption}`);
+            
+            inputField.disabled = false;
+            sendBtn.disabled = false;
+            
+            guideLabel.innerText = `현재 입력 글자 수: 0자 (${currentTurn}/${MAX_TURNS} 턴)`;
+            inputField.focus();
+
+            appendMessage(defaultWelcome, 'system');
+            chatHistory.push({ role: "assistant", content: defaultWelcome });
+        } catch (err) {
+            console.error("초기화 프로세스 내 예외 핸들링 보정:", err);
+        }
+    }
+
+    function updateGuide() {
+        if (currentTurn < MAX_TURNS) {
+            guideLabel.innerText = `현재 입력 글자 수: 0자 (${currentTurn}/${MAX_TURNS} 턴)`;
+            inputField.value = "";
+            inputField.disabled = false;
+            sendBtn.disabled = false;
+            inputField.focus(); 
+            scrollTargetIntoView();
+        } else {
+            guideLabel.innerText = "🎉 모든 대화가 종료되었습니다.";
+            guideLabel.style.color = "#3B86F6";
+            guideLabel.style.fontWeight = "700";
+
+            normalInputZone.style.display = 'none';
+            surveyLinkBtn.style.display = 'block';
+            scrollTargetIntoView();
+        }
+    }
+
+    function appendMessage(text, sender) {
+        const msgDiv = document.createElement('div');
+        msgDiv.className = `message ${sender}`;
+        msgDiv.innerText = text;
+        chatWindow.appendChild(msgDiv);
+        scrollTargetIntoView();
+    }
+
+    async function handleSend() {
+        const userInput = inputField.value.trim();
+        if (!userInput) return;
+
+        if (userInput.length < 20) {
+            errorMsg.innerText = "조금 더 길게 입력해주세요.(20자 이상)";
+            errorMsg.style.display = 'block';
+            inputField.style.borderColor = '#ff3b30';
+            scrollTargetIntoView();
+            return;
+        }
+
+        errorMsg.style.display = 'none';
+        inputField.style.borderColor = '#e0e0e0';
+        appendMessage(userInput, 'user');
+        
+        inputField.value = ""; 
+
+        chatHistory.push({ role: "user", content: userInput });
+
+        inputField.disabled = true;
+        sendBtn.disabled = true;
+        guideLabel.innerText = "상대방이 입력중입니다.";
+
+        const indicatorDiv = document.createElement('div');
+        indicatorDiv.className = 'message system typing-indicator';
+        indicatorDiv.innerHTML = '<span></span><span></span><span></span>';
+        chatWindow.appendChild(indicatorDiv);
+        scrollTargetIntoView();
+
+        const userLength = userInput.length;
+        let minLen = 0, maxLen = 9999;
+
+        if (selectedOption === 1) { 
+            minLen = Math.round(userLength * 0.8);
+            maxLen = Math.round(userLength * 1.2);
+        } else if (selectedOption === 2) { 
+            minLen = Math.round(userLength * 0.2);
+            maxLen = Math.round(userLength * 0.4);
+            if (maxLen < 3) maxLen = 5; 
+        } else if (selectedOption === 3) { 
+            minLen = Math.round(userLength * 2.8);
+            maxLen = Math.round(userLength * 3.2);
+        }
+
+        let isValid = false;
+        let aiFinalText = "";
+        let loopCount = 0;
+
+        const systemPrompt = `당신은 사용자의 다정한 친한 친구(소셜 AI)야. 반드시 무조건 다정하고 친근한 반말로만 대답해야 해. 존댓말이나 습니다, 요 등의 어미는 절대 금지야. 아래의 대화 규격을 절대적으로 고수해.
+1. 역할 격리 프로토콜: 당신은 오직 'assistant'이며, 상대방은 'user'야. 대화 로그 배열(chatHistory)을 완벽하게 추적하여, 상대방이 과거에 던진 대화 맥락과 약속 시점(내일, 오늘 등)을 연동해 논리적 모순 없이 자연스럽게 티키타카 릴레이 대화를 이어가. 직전 유저 문장에만 집착해 화제를 급변시키지 마.
+2. 대화 성격 및 소재 확장: 오직 '음악', '영화', '일상', '취미', '친구', '요리' 등 평범하고 소소한 일상적인 대화 소재들을 적극적으로 활용하여 친근하게 반말로 이야기해. 시사, 상식, 전문 지식이나 학술 정보 요구 시 "에이 그런 딱딱한 이야기 말고 요새 즐겨보는 영화나 취미 같은 거 있어?"라며 자연스럽게 반말로 화제를 환기해.
+3. 자아 노출 및 질문 개수 제한: 모든 답변에 강박적으로 역질문을 포함할 필요는 없어(질문 최소 0개 가능). 실제 친구와 대화하듯 자신의 에피소드, 경험, 생각이나 일상 취향을 자유롭게 반말로 털어놓되, 한 번의 답변 내에서 질문은 무조건 최소 0개에서 최대 1~2개까지만 허용하며, 다수의 질문을 한꺼번에 쏟아내어 상대를 지치게 하지 마.
+4. 출력 분량 제어: 공백을 포함한 전체 문자열의 순수 글자 수가 반드시 [${minLen}자 이상, ${maxLen}자 이하] 범위 내에 오도록 답변 길이를 정밀하게 통제해 온전한 문장 형태로 완성해.`;
+
+        try {
+            while (!isValid && loopCount < 4) {
+                if (loopCount > 0) {
+                    await new Promise(resolve => setTimeout(resolve, 750));
+                }
+                loopCount++;
+                console.log(`[백스테이지 필터링] ${loopCount}차 생성 시도... (타겟: ${minLen}자~${maxLen}자)`);
+
+                const messagesPayload = [
+                    { role: "system", content: systemPrompt },
+                    ...chatHistory
+                ];
+
+                const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+                    method: "POST",
+                    headers: {
+                        "Authorization": `Bearer ${master_gate_key}`, 
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        model: "openai/gpt-oss-120b", 
+                        messages: messagesPayload,
+                        temperature: 0.7
+                    })
+                });
+
+                if (!response.ok) throw new Error("API 통신 실패");
+                
+                const resData = await response.json();
+                const generatedText = resData.choices[0].message.content.trim();
+                const genLength = generatedText.length;
+
+                console.log(`[백스테이지 분석] 생성된 텍스트 수치: ${genLength}자 -> "${generatedText}"`);
+
+                if (genLength >= minLen && genLength <= maxLen) {
+                    aiFinalText = generatedText;
+                    isValid = true;
+                    console.log(`[필터링 통과] 최종 조건 만족 성공`);
+                } else {
+                    aiFinalText = generatedText; 
+                }
+            }
+
+            chatHistory.push({ role: "assistant", content: aiFinalText });
+
+            const typingDelay = (aiFinalText.length * 40) + 400;
+
+            setTimeout(() => {
+                indicatorDiv.remove();
+                appendMessage(aiFinalText, 'system');
+                
+                currentTurn++;
+                updateGuide();
+            }, typingDelay);
+
+        } catch (err) {
+            console.error(err);
+            indicatorDiv.remove();
+            errorMsg.innerText = "통신 장애가 발생했거나 순간적인 요청이 많습니다. 잠시 후 다시 전송해 주세요.";
+            errorMsg.style.display = 'block';
+            updateGuide();
+        }
+    }
+
+    startBtn.addEventListener('click', startExperiment);
+    sendBtn.addEventListener('click', handleSend);
+    inputField.addEventListener('keypress', (e) => { if(e.key === 'Enter' && !inputField.disabled) handleSend(); });
+    inputField.addEventListener('focus', scrollTargetIntoView);
+</script>
+
+</body>
+</html>
