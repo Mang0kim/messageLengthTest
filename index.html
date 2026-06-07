@@ -188,7 +188,7 @@
 
     <button id="start-btn" disabled>AI와 대화 시작하기</button>
     
-    <div id="version-tag">v1.6.2</div>
+    <div id="version-tag">v1.6.3</div>
 </div>
 
 <div class="app-container">
@@ -204,8 +204,9 @@
     <div id="chat-window"></div>
 
     <div class="bottom-container" id="interactive-bottom-bar">
+        <!-- [변경] 글자 수 카운팅 연동을 위해 레이블의 초기 상태 설정 -->
         <div id="guide-label" class="guide-no-select">대화 시작 버튼을 눌러주세요.</div>
-        <div id="error-msg">통신 장애 또는 올바르지 않은 참여 코드입니다. 코드를 다시 확인해 주세요.</div>
+        <div id="error-msg">통신 장애가 발생했거나 순간적인 요청이 많습니다. 잠시 후 다시 전송해 주세요.</div>
         
         <div class="input-area" id="normal-input-zone">
             <input type="text" id="user-input" autocomplete="off" disabled placeholder="텍스트를 입력하세요.">
@@ -217,7 +218,7 @@
 </div>
 
 <script>
-    const APP_VERSION = "1.6.2";
+    const APP_VERSION = "1.6.3";
     const defaultWelcome = "안녕. 오늘 하루는 어떻게 보냈어?";
 
     const SEED_A = "gsk_ktKbZePw7IlkBnJs8s5wWGdyb3FY";
@@ -271,9 +272,15 @@
         }
     });
 
+    // [추가] 유저가 입력창에 타이핑할 때 상단 레이블에 실시간 글자 수를 업데이트하는 리스너
+    inputField.addEventListener('input', () => {
+        if (!inputField.disabled) {
+            guideLabel.innerText = `현재 입력 글자 수: ${inputField.value.length}자 (${currentTurn}/${MAX_TURNS} 턴)`;
+        }
+    });
+
     function startExperiment() {
-        const userProvidedPart = experimentCode.value.trim();
-        master_gate_key = SEED_A + userProvidedPart + SEED_B;
+        master_gate_key = SEED_A + experimentCode.value.trim() + SEED_B;
 
         selectedOption = Math.floor(Math.random() * 3) + 1;
         console.log(`[실험 로그] 선택된 실시간 제어 옵션 유형: ${selectedOption}`);
@@ -283,7 +290,8 @@
         inputField.disabled = false;
         sendBtn.disabled = false;
         
-        guideLabel.innerText = "자유롭게 대화를 나누어 보세요.";
+        // 시작 시 실시간 글자 수 레이블 포맷 적용
+        guideLabel.innerText = `현재 입력 글자 수: 0자 (${currentTurn}/${MAX_TURNS} 턴)`;
         inputField.focus();
 
         appendMessage(defaultWelcome, 'system');
@@ -292,7 +300,8 @@
 
     function updateGuide() {
         if (currentTurn < MAX_TURNS) {
-            guideLabel.innerText = `자유롭게 대화를 나누어 보세요. (${currentTurn}/${MAX_TURNS})`;
+            // [변경] 고정 안내문 대신 현재 글자 수 상태 포맷으로 레이블 초기화
+            guideLabel.innerText = `현재 입력 글자 수: 0자 (${currentTurn}/${MAX_TURNS} 턴)`;
             inputField.value = "";
             inputField.disabled = false;
             sendBtn.disabled = false;
@@ -366,7 +375,6 @@
         let aiFinalText = "";
         let loopCount = 0;
 
-        // [지침 개정] 4번 문장 부호 제약 조건 전면 해제 처리 완료
         const systemPrompt = `당신은 사용자의 다정한 친한 친구(소셜 AI)야. 반드시 무조건 다정하고 친근한 반말로만 대답해야 해. 존댓말이나 습니다, 요 등의 어미는 절대 금지야. 아래의 대화 규격을 절대적으로 고수해.
 1. 역할 격리 프로토콜: 당신은 오직 'assistant'이며, 상대방은 'user'야. 대화 로그 배열(chatHistory)을 완벽하게 추적하여, 상대방이 과거에 던진 대화 맥락과 약속 시점(내일, 오늘 등)을 연동해 논리적 모순 없이 자연스럽게 티키타카 릴레이 대화를 이어가. 직전 유저 문장에만 집착해 화제를 급변시키지 마.
 2. 대화 성격 및 소재 확장: 오직 '음악', '영화', '일상', '취미', '친구', '요리' 등 평범하고 소소한 일상적인 대화 소재들을 적극적으로 활용하여 친근하게 반말로 이야기해. 시사, 상식, 전문 지식이나 학술 정보 요구 시 "에이 그런 딱딱한 이야기 말고 요새 즐겨보는 영화나 취미 같은 거 있어?"라며 자연스럽게 반말로 화제를 환기해.
@@ -375,6 +383,10 @@
 
         try {
             while (!isValid && loopCount < 4) {
+                // [429 에러 해결] 백스테이지 재시도 가동 시 버스트 연사를 방지하기 위한 750ms 휴지기(Delay) 강제 주입
+                if (loopCount > 0) {
+                    await new Promise(resolve => setTimeout(resolve, 750));
+                }
                 loopCount++;
                 console.log(`[백스테이지 필터링] ${loopCount}차 생성 시도... (타겟: ${minLen}자~${maxLen}자)`);
 
@@ -428,16 +440,12 @@
         } catch (err) {
             console.error(err);
             indicatorDiv.remove();
-            errorMsg.innerText = "통신 장애 또는 올바르지 않은 참여 코드입니다. 코드를 다시 확인해 주세요.";
+            // [변경] 대화 도중 발생한 예외 상황 문구를 상황에 맞게 유연하게 전환 처리
+            errorMsg.innerText = "통신 장애가 발생했거나 순간적인 요청이 많습니다. 잠시 후 다시 전송해 주세요.";
             errorMsg.style.display = 'block';
             updateGuide();
         }
     }
-
-    startBtn.addEventListener('click', startExperiment);
-    sendBtn.addEventListener('click', handleSend);
-    inputField.addEventListener('keypress', (e) => { if(e.key === 'Enter' && !inputField.disabled) handleSend(); });
-    inputField.addEventListener('focus', scrollTargetIntoView);
 </script>
 
 </body>
