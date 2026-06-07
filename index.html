@@ -50,7 +50,6 @@
             padding: 0 4px;
         }
 
-        /* [수정] iOS에서도 완벽하게 색상과 체크마크가 커스텀 노출되는 체크박스 스타일 */
         .agreement-box input[type="checkbox"] {
             -webkit-appearance: none;
             -moz-appearance: none;
@@ -62,12 +61,10 @@
             transition: all 0.15s ease-in-out;
             flex-shrink: 0;
         }
-        /* 체크되었을 때 스타일 정의 */
         .agreement-box input[type="checkbox"]:checked {
             background-color: var(--user-bubble-end);
             border-color: var(--user-bubble-end);
         }
-        /* 가상 요소로 흰색 체크 기호(✓) 생성 */
         .agreement-box input[type="checkbox"]:checked::before {
             content: '✓';
             color: #fff;
@@ -172,7 +169,7 @@
 
     <button id="start-btn" disabled>AI와 대화 시작하기</button>
     
-    <div id="version-tag">v0.9.2</div>
+    <div id="version-tag">v0.9.3</div>
 </div>
 
 <div class="app-container">
@@ -200,8 +197,9 @@
     </div>
 </div>
 
-<script {
-    const APP_VERSION = "0.9.2";
+<!-- [수정 완료] 열기 괄호 기호 { 오류를 제거하여 정상 작동하도록 스크립트 엔진 복구 -->
+<script>
+    const APP_VERSION = "0.9.3";
     const defaultWelcome = "안녕. 오늘 하루는 어떻게 보냈어?";
 
     const scenarioOption1 = [
