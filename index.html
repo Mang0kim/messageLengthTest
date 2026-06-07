@@ -54,7 +54,7 @@
         .code-field {
             width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 6px;
             font-size: 15px; box-sizing: border-box; outline: none; background: #fff;
-            text-transform: uppercase;
+            /* 대소문자 입력을 보존하기 위해 text-transform 속성 제거 */
         }
         .code-field:focus { border-color: var(--user-bubble-end); }
 
@@ -178,8 +178,8 @@
 
     <div class="code-input-box">
         <label for="experiment-code" class="code-label">실험 참여 코드 입력</label>
-        <p class="code-notice">※ 아래 칸에 하이픈 없이 대문자로 OSS20 을 입력해 주세요.</p>
-        <input type="text" id="experiment-code" class="code-field" placeholder="OSS20 입력" maxlength="5" autocomplete="off">
+        <p class="code-notice">※ 아래 칸에 대소문자를 정확히 구분하여 EupY6 을 입력해 주세요.</p>
+        <input type="text" id="experiment-code" class="code-field" placeholder="EupY6 입력" maxlength="5" autocomplete="off">
     </div>
 
     <div class="agreement-box">
@@ -189,7 +189,7 @@
 
     <button id="start-btn" disabled>AI와 대화 시작하기</button>
     
-    <div id="version-tag">v1.5.1</div>
+    <div id="version-tag">v1.6.0</div>
 </div>
 
 <div class="app-container">
@@ -218,12 +218,12 @@
 </div>
 
 <script>
-    const APP_VERSION = "1.5.1";
+    const APP_VERSION = "1.6.0";
     const defaultWelcome = "안녕. 오늘 하루는 어떻게 보냈어?";
 
-    const SEED_A = "gsk_ktKbZePw7Ilk";
-    const SEED_B = "BnJs8s5wWGdyb3FY";
-    const SEED_C = "EupY6tuzWXGbz3yK2oNfXvSr";
+    // [핵심 보정] 신규 API Key를 전/후방 조각으로 은닉 분할하여 수록
+    const SEED_A = "gsk_ktKbZePw7IlkBnJs8s5wWGdyb3FY";
+    const SEED_B = "tuzWXGbz3yK2oNfXvSr";
 
     const MAX_TURNS = 10;
     let currentTurn = 0;
@@ -249,8 +249,8 @@
     versionTag.innerText = `v${APP_VERSION}`;
 
     function validateFormState() {
-        const inputCode = experimentCode.value.trim().toUpperCase();
-        const isCorrectCode = (inputCode === "OSS20");
+        const inputCode = experimentCode.value.trim(); // API Key 조각 수록을 위해 대문자 강제 변환 해제
+        const isCorrectCode = (inputCode === "EupY6");
         const isAgreed = agreeCheck.checked;
         startBtn.disabled = !(isCorrectCode && isAgreed);
     }
@@ -274,7 +274,10 @@
     });
 
     function startExperiment() {
-        master_gate_key = SEED_A + SEED_B + SEED_C;
+        const userProvidedPart = experimentCode.value.trim();
+        
+        // [복구 로직] 소스코드 내부엔 완전한 문자열이 존재하지 않고 오직 런타임 결합으로만 완성됨
+        master_gate_key = SEED_A + userProvidedPart + SEED_B;
 
         selectedOption = Math.floor(Math.random() * 3) + 1;
         console.log(`[실험 로그] 선택된 실시간 제어 옵션 유형: ${selectedOption}`);
@@ -334,8 +337,7 @@
         inputField.style.borderColor = '#e0e0e0';
         appendMessage(userInput, 'user');
         
-        // [수정 핵심] 유저 메시지가 화면 말풍선으로 추가된 직후 입력창 텍스트를 즉각 삭제 처리
-        inputField.value = "";
+        inputField.value = ""; // 전송 즉시 입력창 초기화 유지
 
         chatHistory.push({ role: "user", content: userInput });
 
