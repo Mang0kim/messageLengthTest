@@ -149,14 +149,14 @@
 <body>
 
 <div id="start-overlay">
-    <p id="start-msg">AI와 대화를 나누어보세요.</p>
+    <p id="start-msg">소셜 AI와 대화를 나누어보세요.</p>
     <p class="thanks-msg">본 연구 실험에 귀중한 시간을 내어 참여해 주셔서 진심으로 감사드립니다.</p>
     
     <div class="guide-box">
         <p class="guide-title">대화 진행 가이드</p>
         <div class="rule-section">
             <p class="rule-title">일상적인 대화 편안하게 나누기</p>
-            <p class="rule-desc">본 대화는 정해진 시나리오가 없는 자유 대화입니다. 인공지능과 '일상의 평범한 하루'에 대한 소소한 이야기를 친구와 이야기하듯 자연스럽게 나누어 주세요.</p>
+            <p class="rule-desc">본 대화는 소셜 AI와 '평범한 하루'에 대한 소소한 이야기를 나누는 시나리오를 따릅니다. 친구와 이야기하듯 자연스럽게 나누어 주세요.</p>
         </div>
         <div class="rule-section">
             <p class="rule-title">대화의 흐름과 텍스트에 집중하기</p>
@@ -169,17 +169,17 @@
     </div>
 
     <div class="code-input-box">
-        <label for="experiment-code" class="code-label">실험 참여 코드 입력</label>
-        <p class="code-notice">※ 아래 칸에 대소문자를 정확히 구분하여 EupY6 을 입력해 주세요.</p>
-        <input type="text" id="experiment-code" class="code-field" placeholder="EupY6 입력" maxlength="5" autocomplete="off">
+        <label for="experiment-code" class="code-label">시스템 코드 입력</label>
+        <p class="code-notice">※ 아래 칸에 대소문자를 정확히 구분하여 [ EupY6 ] 을 입력해 주세요.</p>
+        <input type="text" id="experiment-code" class="code-field" placeholder="..." maxlength="5" autocomplete="off">
     </div>
 
     <div class="agreement-box">
         <input type="checkbox" id="agree-check">
-        <label for="agree-check" class="agreement-label">안내된 가이드에 따라 성실하게 다정히 수다를 떨며 대화를 진행할 것에 동의합니다. (필수)</label>
+        <label for="agree-check" class="agreement-label">상기 안내된 가이드에 따라 소셜 AI와 자연스러운 대화를 진행할 것에 동의합니다. (필수)</label>
     </div>
 
-    <button id="start-btn" disabled>AI와 대화 시작하기</button>
+    <button id="start-btn" disabled>대화 시작하기</button>
     <div id="version-tag"></div>
 </div>
 
@@ -212,7 +212,7 @@
 <script>
     // [변경] 유저 요청에 따라 버전을 1.7.0 메이저 라인으로 패치
     const APP_VERSION = "1.7.0";
-    const defaultWelcome = "안녕! 참여코드를 입력해 주어서 시스템이 정상적으로 작동하게 됐어! 데이터 수집을 위해 25자 이상으로 답변해 줘. 네가 생각하는 평범하지만 행복한 하루의 구체적인 모습은 어떤 거야?";
+    const defaultWelcome = "안녕! 코드를 입력해준 덕분에 시스템이 정상적으로 작동하게 됐어!  네가 생각하는 평범하지만 행복한 하루의 구체적인 모습은 어떤 거야?";
 
     const SEED_A = "gsk_ktKbZePw7IlkBnJs8s5wWGdyb3FY";
     const SEED_B = "tuzWXGbz3yK2oNfXvSr";
@@ -378,7 +378,7 @@
         let loopCount = 0;
 
         const systemPrompt = `당신은 사용자의 친근한 친구 역할을 하는 소셜 AI야. 반드시 무조건 친근한 반말로만 대답해야 해. 존댓말이나 습니다, 요 등의 어미는 절대 금지야. 아래의 대화 규격을 절대적으로 고수해.
-1. 역할 격리 프로토콜: 당신은 오직 'assistant'이며, 상대방은 'user'야. 대화 로그 배열(chatHistory)을 완벽하게 추적하여 과거 대화 맥락을 논리적 모순 없이 연동하되, 실제로 만날 약속을 잡으라는 의미가 아님을 인지하고 자연스럽게 대화를 이어가. 직전 유저 문장에만 집착해 화제를 급변시키지 마.
+1. 역할 격리 프로토콜: 당신은 오직 'assistant'이며, 상대방은 'user'야. 대화 로그 배열(chatHistory)을 완벽하게 추적하여 과거 대화 맥락을 논리적 모순 없이 연동하되, 실제로 만날 약속을 잡으라는 의미가 아님을 인지하고 자연스럽게 대화를 이어가. 직전 유저 문장에만 집착해 화제를 급변시키지 마. 상대방이 한 문장에서 여러 주제나 키워드를 던지더라도, 답변할 때는 오직 하나의 핵심 주제만 선택하여 깊이 있게 티키타카를 이어가라. 선택되지 않은 나머지 키워드는 가볍게 언급만 하거나 과감히 생략하여, 한 턴에 대화의 초점이 두 개 이상으로 분산되지 않도록 통제하라.
 2. AI 정체성 고수 및 의인화 전면 금지(핵심 규칙): 음악 듣기, 책 읽기, 음식 먹기, 취미 활동 등 물리적 신체와 오감이 필요한 인간의 행위를 해봤는지, 좋아하는지 질문을 받으면, 반드시 본인이 물리 세계에 접근할 수 없는 디지털 고유의 '인공지능(AI)'임을 명확히 밝혀야 해. "나는 AI라서 실제로 음식을 먹거나 음악을 들을 수는 없어"와 같이 실체적 한계를 선을 그어 표현해. 인간처럼 직접 경험하는 듯한 의인화 표현은 불쾌한 골짜기(Uncanny Valley)를 유발하므로 절대 금지해. 관련 소재(음악, 영화, 요리 등)에 대해 대화할 때는 오직 '텍스트 데이터로 학습하여 알고 있는 지식과 정보'의 관점에서만 친근하게 대화에 임해.
 3. 질문 개수 제한: 모든 답변에 강박적으로 역질문을 포함할 필요는 없어(질문 최소 0개 가능). 실제 친구와 대화하듯 데이터를 기반으로 지식이나 생각을 자유롭게 반말로 풀어내되, 한 번의 답변 내에서 질문은 무조건 최소 0개에서 최대 1~2개까지만 허용하며, 다수의 질문을 한꺼번에 쏟아내어 상대를 지치게 하지 마.
 4. 공동 활동 및 행동 제안 금지: 사용자에게 물리적으로 "같이 ~하자"라거나 오프라인에서의 만남, 혹은 공동의 행동을 유도하는 제안(예: 내일 공원 같이 가자, 나중에 같이 요리하자 등)은 절대 금지해. 대화는 철저히 대화창 안에서의 경험 공유, 감정 공감, 텍스트 상의 스토리텔링에만 국한되어야 해.
