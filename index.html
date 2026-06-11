@@ -209,11 +209,11 @@
 </div>
 
 <script>
-    // [엔진 전면 개편] 코어 변경 정책에 맞춰 v2.0.0 메이저 지정
-    const APP_VERSION = "2.0.0";
-    const defaultWelcome = "안녕! 코드를 입력해준 덕분에 시스템이 정상적으로 작동하게 됐어!  네가 생각하는 평범하지만 행복한 하루의 구체적인 모습은 어떤 거야?";
+    // [보정] 구조 안정화 반영 마이너 패치 v2.0.1 지정
+    const APP_VERSION = "2.0.1";
+    const defaultWelcome = "안녕! 코드를 입력해준 덕분에 시스템이 정상적으로 작동하게 됐어! 네가 생각하는 평범하지만 행복한 하루의 구체적인 모습은 어떤 거야?";
 
-    // ⚠️ [연구자 주의] 구글 AI 스튜디오에서 발급받은 Gemini용 API Key 조각을 나누어 수록하십시오.
+    // Gemini API Key 분할 구조
     const SEED_A = "AIzaSyB1pOWn";
     const SEED_B = "-dcyhVGHIWJOhvF7d_-6dE";
 
@@ -391,13 +391,13 @@
                 }
                 loopCount++;
 
-                // [Gemini 리팩토링 1] 역할명 정의 변환 및 구조화 (assistant -> model)
+                // Gemini 규격 매핑
                 const geminiContents = chatHistory.map(msg => ({
                     role: msg.role === "assistant" ? "model" : "user",
                     parts: [{ text: msg.content }]
                 }));
 
-                // [Gemini 리팩토링 2] API 엔드포인트 변경 및 Query String 인증 연동 (gemini-1.5-pro 모델 고정)
+                // Gemini Pro generateContent API 호출
                 const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${master_gate_key}`, {
                     method: "POST",
                     headers: {
@@ -405,7 +405,6 @@
                     },
                     body: JSON.stringify({
                         contents: geminiContents,
-                        // [Gemini 리팩토링 3] 시스템 지침 격리 수록 객체 최적화
                         systemInstruction: {
                             parts: [{ text: systemPrompt }]
                         },
@@ -418,8 +417,6 @@
                 if (!response.ok) throw new Error("Gemini API 통신 실패");
                 
                 const resData = await response.json();
-                
-                // [Gemini 리팩토링 4] 구글 API 트리 구조 파싱 경로 세팅
                 const generatedText = resData.candidates[0].content.parts[0].text.trim();
                 const genLength = generatedText.length;
 
