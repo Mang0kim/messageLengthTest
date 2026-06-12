@@ -25,9 +25,7 @@ jobs:
         run: |
           cat <<EOF > config.js
           const KEY_POOL = [
-              "${{ secrets.GEMINI_API_KEY_1 }}",
-              "${{ secrets.GEMINI_API_KEY_2 }}",
-              "${{ secrets.GEMINI_API_KEY_3 }}"
+              "${{ secrets.GEMINI_API_KEY_0 }}"
           ];
           EOF
 

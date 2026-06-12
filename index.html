@@ -224,7 +224,7 @@
     let selectedOption = 1;
     let chatHistory = [];
 
-    // 현재 사용중인 키 인덱스 (라운드로빈)
+    // 현재 사용중인 키 인덱스 (KEY_POOL은 단일 유료 키만 포함)
     let currentKeyIndex = 0;
 
     const startOverlay = document.getElementById('start-overlay');
@@ -453,9 +453,6 @@
             }
 
             chatHistory.push({ role: "assistant", content: aiFinalText });
-
-            // 다음 턴은 다음 키로 (라운드로빈)
-            currentKeyIndex = (currentKeyIndex + 1) % KEY_POOL.length;
 
             const typingDelay = (aiFinalText.length * 40) + 400;
 
